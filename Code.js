@@ -411,6 +411,57 @@ function fetchEngagementMetrics(period) {
 }
 
 /**
+ * Fetch user acquisition data (new vs returning, sessions per user, engaged sessions)
+ */
+function fetchUserAcquisition(period) {
+  try {
+    const { startDate, endDate } = getDateRange(period);
+
+    const requestBody = {
+      dateRanges: [{ startDate: startDate, endDate: endDate }],
+      metrics: [
+        { name: 'totalUsers' },
+        { name: 'newUsers' },
+        { name: 'sessionsPerUser' },
+        { name: 'engagedSessions' }
+      ]
+    };
+
+    const result = makeGA4Request(requestBody);
+
+    if (result.success && result.data.rows && result.data.rows.length > 0) {
+      const values = result.data.rows[0].metricValues;
+      const totalUsers = parseInt(values[0].value) || 0;
+      const newUsers = parseInt(values[1].value) || 0;
+      const returningUsers = Math.max(totalUsers - newUsers, 0);
+      const sessionsPerUser = parseFloat(values[2].value) || 0;
+      const engagedSessions = parseInt(values[3].value) || 0;
+
+      const newPct = totalUsers > 0 ? Math.round((newUsers / totalUsers) * 100) : 50;
+      const returnPct = 100 - newPct;
+
+      return {
+        success: true,
+        data: {
+          newUsers: newUsers,
+          returningUsers: returningUsers,
+          sessionsPerUser: sessionsPerUser.toFixed(2),
+          engagedSessions: engagedSessions,
+          newUserPct: newPct,
+          returningUserPct: returnPct
+        }
+      };
+    }
+
+    return { success: true, data: { newUsers: 0, returningUsers: 0, sessionsPerUser: '0.00', engagedSessions: 0, newUserPct: 50, returningUserPct: 50 } };
+
+  } catch (error) {
+    Logger.log('Error fetching user acquisition: ' + error.toString());
+    return { success: false, error: error.toString() };
+  }
+}
+
+/**
  * Fetch all dashboard data at once
  */
 function fetchAllDashboardData(period) {
@@ -421,7 +472,8 @@ function fetchAllDashboardData(period) {
     topPages: fetchTopPages(period),
     devices: fetchDeviceData(period),
     countries: fetchCountryData(period),
-    engagement: fetchEngagementMetrics(period)
+    engagement: fetchEngagementMetrics(period),
+    acquisition: fetchUserAcquisition(period)
   };
 }
 

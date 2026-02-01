@@ -389,6 +389,10 @@
     if (data.engagement && data.engagement.success) {
       updatePerformanceChart(data.engagement.data);
     }
+
+    if (data.acquisition && data.acquisition.success) {
+      updateAcquisitionCard(data.acquisition.data);
+    }
   }
 
   function handleError(error) {
@@ -521,6 +525,20 @@
         </tr>
       `;
     }).join('');
+  }
+
+  function updateAcquisitionCard(data) {
+    document.getElementById('acqNewUsers').textContent = formatNumber(data.newUsers);
+    document.getElementById('acqReturningUsers').textContent = formatNumber(data.returningUsers);
+    document.getElementById('acqSessionsPerUser').textContent = data.sessionsPerUser;
+    document.getElementById('acqEngagedSessions').textContent = formatNumber(data.engagedSessions);
+
+    const newBar = document.getElementById('acqNewUserBar');
+    const retBar = document.getElementById('acqReturnBar');
+    newBar.style.width = data.newUserPct + '%';
+    retBar.style.width = data.returningUserPct + '%';
+    newBar.querySelector('span').textContent = 'New ' + data.newUserPct + '%';
+    retBar.querySelector('span').textContent = 'Returning ' + data.returningUserPct + '%';
   }
 
   // ========================================
@@ -656,7 +674,7 @@
       
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(7);
-      pdf.text('University of the Western Cape | Innovation Hub | 405 Voortrekker Road, Oostersee | infouih@uwc.ac.za', 
+      pdf.text('University of the Western Cape | Robert Sobukwe Road, Bellville 7535 | info@uwc.ac.za | +27 21 959 2911',
                pageWidth / 2, pageHeight - 5, { align: 'center' });
       
       // Save PDF
