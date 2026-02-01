@@ -84,13 +84,20 @@
      ======================================== */
   .header {
     background: #ffffff;
-    padding: 32px 200px;
+    padding: 0 200px;
     box-shadow: var(--shadow-sm);
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 1000;
+  }
+
+  .header-top-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 10px 0 6px;
   }
 
   .header-content {
@@ -100,6 +107,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-xl);
+    padding-bottom: 12px;
   }
 
   .logo-container {
@@ -176,41 +184,10 @@
     transform: translateY(2px);
   }
 
-  .header-right-stack {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-  }
-
   .header-actions {
     display: flex;
     align-items: center;
     gap: var(--space-md);
-  }
-
-  .btn-contact {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 28px;
-    background: var(--uwc-blue);
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .btn-contact:hover {
-    background: var(--uwc-blue-light);
-    transform: translateY(-1px);
   }
 
   .btn-export {
@@ -263,7 +240,7 @@
     padding: 0 200px;
     display: flex;
     align-items: center;
-    margin-top: 144px; /* offset for fixed header */
+    margin-top: 140px; /* offset for fixed header */
   }
 
   .nav-strip-content {
@@ -1046,10 +1023,11 @@
 
   .footer-info h4 {
     font-family: 'Poppins', sans-serif;
-    font-size: 1.05rem;
-    font-weight: 700;
-    margin-bottom: var(--space-md);
-    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: rgba(255,255,255,0.9);
+    opacity: 0.9;
   }
 
   .footer-info {
@@ -1082,9 +1060,8 @@
   .footer-brand-social {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    height: 100%;
+    align-items: flex-end;
+    gap: var(--space-lg);
   }
 
   .footer-logo {
@@ -1096,7 +1073,6 @@
   .social-icons {
     display: flex;
     gap: var(--space-md);
-    margin-top: auto;
   }
 
   .social-icons a {
@@ -1121,18 +1097,20 @@
   .footer-bottom {
     max-width: 1400px;
     margin: 0 auto;
-    padding-top: var(--space-2xl);
+    padding-top: var(--space-xl);
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
+    gap: var(--space-xl);
     font-size: 0.85rem;
     opacity: 0.8;
+    flex-wrap: wrap;
   }
 
-  .footer-bottom-left {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
+  .footer-property {
+    margin-left: auto;
+    font-size: 0.75rem;
+    opacity: 0.6;
   }
 
   .footer-bottom-links {
@@ -1405,7 +1383,7 @@
       position: relative;
     }
     
-    .btn-export, .btn-contact, .header-nav, .side-tab {
+    .btn-export, .header-nav, .header-top-row, .side-tab {
       display: none;
     }
     
