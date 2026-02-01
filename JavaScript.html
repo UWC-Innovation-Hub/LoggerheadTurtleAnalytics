@@ -600,6 +600,22 @@
   }
 
   // ========================================
+  // Side Tab Toggle
+  // ========================================
+  function toggleSideTab() {
+    const tab = document.getElementById('sideTab');
+    tab.classList.toggle('collapsed');
+  }
+
+  // Initialize side tab as collapsed
+  document.addEventListener('DOMContentLoaded', function() {
+    const tab = document.getElementById('sideTab');
+    if (tab) {
+      tab.classList.add('collapsed');
+    }
+  });
+
+  // ========================================
   // PDF Export - Force fit to single page
   // ========================================
   async function exportToPDF() {
