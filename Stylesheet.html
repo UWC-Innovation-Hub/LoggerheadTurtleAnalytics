@@ -80,12 +80,17 @@
   }
 
   /* ========================================
-     Header (White Banner with Logo)
+     Header (White Banner with Logo) - Fixed
      ======================================== */
   .header {
     background: #ffffff;
-    padding: var(--space-lg) var(--space-xl);
+    padding: 10px var(--space-xl);
     box-shadow: var(--shadow-sm);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
   }
 
   .header-content {
@@ -110,7 +115,7 @@
   }
 
   .logo {
-    height: 70px;
+    height: 50px;
     width: auto;
   }
 
@@ -122,17 +127,18 @@
   .nav-item {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 10px 16px;
+    gap: 4px;
+    padding: 8px 14px;
     font-family: 'Poppins', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.78rem;
+    font-weight: 700;
     color: var(--uwc-blue);
     text-decoration: none;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
     border-radius: var(--radius-sm);
     transition: all 0.2s ease;
+    white-space: nowrap;
   }
 
   .nav-item:hover {
@@ -141,9 +147,10 @@
   }
 
   .nav-item svg {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     transition: transform 0.2s;
+    stroke-width: 3;
   }
 
   .nav-item:hover svg {
@@ -159,17 +166,17 @@
   .btn-export {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-sm);
-    padding: 12px 24px;
+    gap: 6px;
+    padding: 10px 22px;
     background: var(--uwc-gold);
     color: var(--uwc-blue-dark);
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: 4px;
     font-family: 'Poppins', sans-serif;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(196,160,0,0.3);
@@ -177,8 +184,23 @@
 
   .btn-export:hover {
     background: var(--uwc-gold-light);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(196,160,0,0.4);
+  }
+
+  .header-divider {
+    color: #cbd5e0;
+    font-size: 1.2rem;
+    font-weight: 300;
+  }
+
+  .header-section-label {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--uwc-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
   }
 
   /* ========================================
@@ -186,7 +208,12 @@
      ======================================== */
   .nav-strip {
     background: var(--uwc-blue);
-    padding: 14px var(--space-xl);
+    padding: 10px var(--space-xl);
+    position: fixed;
+    top: 70px; /* below the header */
+    left: 0;
+    right: 0;
+    z-index: 999;
   }
 
   .nav-strip-content {
@@ -237,6 +264,7 @@
     background: var(--gradient-card);
     border-bottom: 1px solid var(--border-light);
     padding: var(--space-xl) var(--space-xl);
+    margin-top: 110px; /* offset for fixed header (70px) + nav strip (40px) */
   }
 
   .hero-content {
@@ -973,17 +1001,17 @@
     .header-nav {
       display: none;
     }
-    
+
     .footer-content {
       grid-template-columns: 1fr 1fr;
     }
-    
+
     .tables-section {
       grid-template-columns: 1fr;
     }
-    
+
     .logo {
-      height: 55px;
+      height: 42px;
     }
   }
 
@@ -1033,7 +1061,7 @@
     }
     
     .logo {
-      height: 200px;
+      height: 40px;
     }
   }
 
