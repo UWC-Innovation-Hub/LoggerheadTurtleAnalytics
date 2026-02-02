@@ -29,6 +29,21 @@ function include(filename) {
 }
 
 /**
+ * Fetch header logo as base64 data URL for PDF embedding
+ */
+function fetchLogoAsBase64() {
+  try {
+    var response = UrlFetchApp.fetch('https://innovationhub.uwc.ac.za/img/UIH_Logo_FA.png', { muteHttpExceptions: true });
+    var blob = response.getBlob();
+    var base64 = Utilities.base64Encode(blob.getBytes());
+    return 'data:' + blob.getContentType() + ';base64,' + base64;
+  } catch(e) {
+    Logger.log('Logo fetch error: ' + e);
+    return null;
+  }
+}
+
+/**
  * Make API request to GA4 Data API using REST
  */
 function makeGA4Request(requestBody) {

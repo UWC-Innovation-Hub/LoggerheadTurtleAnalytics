@@ -701,15 +701,21 @@
       pdf.setFillColor(0, 51, 102);
       pdf.rect(0, 0, pageWidth, headerHeight, 'F');
 
-      // Add header logo
+      // Add header logo via server-side base64 fetch
       try {
-        var logoImg = document.querySelector('.header .logo');
-        if (logoImg) {
-          var logoCanvas = await html2canvas(logoImg, { scale: 2, useCORS: true, logging: false, backgroundColor: null });
-          var logoData = logoCanvas.toDataURL('image/png');
+        var logoBase64 = await new Promise(function(resolve, reject) {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .fetchLogoAsBase64();
+        });
+        if (logoBase64) {
           var logoH = 14;
-          var logoW = (logoCanvas.width / logoCanvas.height) * logoH;
-          pdf.addImage(logoData, 'PNG', 6, (headerHeight - logoH) / 2, logoW, logoH);
+          var tempImg = new Image();
+          tempImg.src = logoBase64;
+          await new Promise(function(r) { tempImg.onload = r; tempImg.onerror = r; });
+          var logoW = (tempImg.naturalWidth / tempImg.naturalHeight) * logoH;
+          pdf.addImage(logoBase64, 'PNG', 6, (headerHeight - logoH) / 2, logoW, logoH);
         }
       } catch(e) { console.warn('Logo embed failed:', e); }
 
