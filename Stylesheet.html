@@ -881,6 +881,12 @@
     z-index: 998;
     display: flex;
     align-items: stretch;
+    background: var(--uwc-blue);
+    border: 2px solid #ffffff;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.15);
+    overflow: hidden;
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -890,22 +896,24 @@
 
   .side-tab-toggle {
     width: 40px;
-    background: var(--uwc-blue);
+    background: transparent;
     border: none;
-    border-radius: 8px 0 0 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--uwc-gold-light);
+    color: #ffffff;
     transition: all 0.2s;
     flex-shrink: 0;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.15);
+  }
+
+  .side-tab-toggle .turtle-icon {
+    stroke: #ffffff;
+    stroke-width: 1;
   }
 
   .side-tab-toggle:hover {
-    background: var(--uwc-blue-light);
-    width: 44px;
+    background: rgba(255,255,255,0.1);
   }
 
   .side-tab.collapsed .side-tab-toggle .turtle-icon {
@@ -913,12 +921,10 @@
   }
 
   .side-tab-content {
-    background: var(--uwc-blue);
+    background: transparent;
     padding: var(--space-lg) var(--space-xl);
     width: 260px;
     color: #ffffff;
-    border-radius: 0 0 0 8px;
-    box-shadow: -2px 2px 15px rgba(0,0,0,0.2);
     position: relative;
     overflow: hidden;
   }
@@ -930,7 +936,7 @@
     right: -20%;
     width: 150px;
     height: 150px;
-    background: radial-gradient(circle, rgba(196,160,0,0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
     border-radius: 50%;
   }
 
