@@ -868,6 +868,16 @@ function validateSession(token) {
  * Test function — run from editor to test login flow
  * Change the email to a registered user in the Users sheet
  */
+function testFetchUsers() {
+  var sheet = getUsersSheet();
+  var data = sheet.getDataRange().getValues();
+  Logger.log('Users sheet URL: ' + sheet.getParent().getUrl());
+  Logger.log('Total rows (incl header): ' + data.length);
+  for (var i = 0; i < data.length; i++) {
+    Logger.log('Row ' + (i + 1) + ': ' + JSON.stringify(data[i]));
+  }
+}
+
 function testSendAuthCode() {
   var testEmail = 'studiouih@uwc.ac.za'; // Change to your test email
   var result = sendAuthCode(testEmail);
