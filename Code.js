@@ -706,16 +706,18 @@ function sendEmailViaPHP(email, name, code) {
 
     var payload = {
       to: email,
-      name: name || 'User',
       subject: 'UWC Immersive Zone - Your Login Code',
-      code: code,
-      template: 'auth_code',
-      api_key: apiKey
+      html: buildAuthEmailHtml(name, code),
+      text: 'Hi ' + (name || 'User') + ',\n\nYour login code is: ' + code + '\n\nThis code expires in 10 minutes.\n\nUWC Immersive Zone',
+      fromName: 'UWC Immersive Zone'
     };
 
     var options = {
       method: 'post',
       contentType: 'application/json',
+      headers: {
+        'X-API-Key': apiKey
+      },
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
