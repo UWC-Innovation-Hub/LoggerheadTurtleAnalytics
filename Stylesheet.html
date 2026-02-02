@@ -789,13 +789,19 @@
     font-size: 1rem;
     font-weight: 600;
     color: var(--uwc-blue);
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
+    position: relative;
+    padding-top: 2px;
   }
 
-  .table-header h3 svg {
-    color: var(--uwc-gold);
+  .table-header h3::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 44px;
+    height: 3px;
+    background: var(--uwc-gold);
+    border-radius: 2px;
   }
 
   .table-body {
