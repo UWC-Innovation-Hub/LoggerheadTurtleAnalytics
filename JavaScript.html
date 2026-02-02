@@ -49,7 +49,6 @@
   // ========================================
   document.addEventListener('DOMContentLoaded', function() {
     bustImageCache();
-    initBreadcrumbAnalyticsLinks();
     setCurrentDate();
     initializePeriodButtons();
     initializeCharts();
@@ -64,17 +63,6 @@
       if (src && src.indexOf('?') === -1) {
         img.setAttribute('src', src + cacheBuster);
       }
-    });
-  }
-
-  function initBreadcrumbAnalyticsLinks() {
-    var links = document.querySelectorAll('.breadcrumb-analytics');
-    links.forEach(function(link) {
-      link.addEventListener('click', function() {
-        try {
-          sessionStorage.setItem('fromAnalytics', 'true');
-        } catch(e) {}
-      });
     });
   }
 
