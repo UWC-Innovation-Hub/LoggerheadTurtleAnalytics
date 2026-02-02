@@ -359,7 +359,8 @@
 
   function handleDashboardData(data) {
     showLoading(false);
-    
+    hidePreloader();
+
     if (data.overview && data.overview.success) {
       updateMetrics(data.overview.data);
       updateDateRange(data.overview.dateRange);
@@ -397,8 +398,18 @@
 
   function handleError(error) {
     showLoading(false);
+    hidePreloader();
     console.error('Dashboard error:', error);
     document.getElementById('dateRangeDisplay').textContent = 'Error loading data';
+  }
+
+  function hidePreloader() {
+    var progress = document.getElementById('preloaderProgress');
+    var overlay = document.getElementById('preloaderOverlay');
+    if (progress) progress.classList.add('complete');
+    setTimeout(function() {
+      if (overlay) overlay.classList.add('hidden');
+    }, 400);
   }
 
   // ========================================
@@ -600,18 +611,52 @@
   }
 
   // ========================================
-  // Side Tab Toggle
+  // Side Tab Toggle with Auto-Hide
   // ========================================
+  var sideTabTimer = null;
+
   function toggleSideTab() {
-    const tab = document.getElementById('sideTab');
+    var tab = document.getElementById('sideTab');
     tab.classList.toggle('collapsed');
+    if (!tab.classList.contains('collapsed')) {
+      startSideTabTimer();
+    } else {
+      clearSideTabTimer();
+    }
   }
 
-  // Initialize side tab as collapsed
+  function startSideTabTimer() {
+    clearSideTabTimer();
+    sideTabTimer = setTimeout(function() {
+      var tab = document.getElementById('sideTab');
+      if (tab && !tab.classList.contains('collapsed')) {
+        tab.classList.add('collapsed');
+      }
+    }, 5000);
+  }
+
+  function clearSideTabTimer() {
+    if (sideTabTimer) {
+      clearTimeout(sideTabTimer);
+      sideTabTimer = null;
+    }
+  }
+
+  // Initialize side tab as collapsed + auto-hide listeners
   document.addEventListener('DOMContentLoaded', function() {
-    const tab = document.getElementById('sideTab');
+    var tab = document.getElementById('sideTab');
     if (tab) {
       tab.classList.add('collapsed');
+      tab.addEventListener('mouseenter', function() {
+        if (!tab.classList.contains('collapsed')) {
+          clearSideTabTimer();
+        }
+      });
+      tab.addEventListener('mouseleave', function() {
+        if (!tab.classList.contains('collapsed')) {
+          startSideTabTimer();
+        }
+      });
     }
   });
 

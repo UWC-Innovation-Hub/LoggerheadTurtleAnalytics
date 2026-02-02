@@ -435,6 +435,73 @@
   }
 
   /* ========================================
+     Preloader Overlay
+     ======================================== */
+  .preloader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--uwc-blue);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+
+  .preloader-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .preloader-content {
+    text-align: center;
+    width: 360px;
+  }
+
+  .preloader-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .preloader-progress-fill {
+    height: 100%;
+    background: var(--uwc-gold);
+    border-radius: 3px;
+    width: 0%;
+    animation: preloaderFill 8s ease-out forwards;
+  }
+
+  .preloader-progress-fill.complete {
+    width: 100% !important;
+    animation: none;
+    transition: width 0.3s ease;
+  }
+
+  @keyframes preloaderFill {
+    0% { width: 0%; }
+    30% { width: 40%; }
+    60% { width: 65%; }
+    80% { width: 80%; }
+    100% { width: 90%; }
+  }
+
+  .preloader-text {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.8);
+    font-weight: 400;
+    letter-spacing: 0.3px;
+  }
+
+  /* ========================================
      Main Content
      ======================================== */
   .main-content {
