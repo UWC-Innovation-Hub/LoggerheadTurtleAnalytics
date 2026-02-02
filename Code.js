@@ -864,6 +864,23 @@ function validateSession(token) {
 /**
  * Run this to trigger OAuth consent if needed
  */
+/**
+ * Test function — run from editor to test login flow
+ * Change the email to a registered user in the Users sheet
+ */
+function testSendAuthCode() {
+  var testEmail = 'studiouih@uwc.ac.za'; // Change to your test email
+  var result = sendAuthCode(testEmail);
+  Logger.log('sendAuthCode result: ' + JSON.stringify(result));
+}
+
+function testVerifyAuthCode() {
+  var testEmail = 'studiouih@uwc.ac.za'; // Same email
+  var testCode = 'XXXXX';                 // Replace with code from email
+  var result = verifyAuthCode(testEmail, testCode);
+  Logger.log('verifyAuthCode result: ' + JSON.stringify(result));
+}
+
 function authorizeScript() {
   // These scopes will trigger OAuth consent
   const token = ScriptApp.getOAuthToken();
