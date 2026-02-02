@@ -17,8 +17,23 @@ function doGet(e) {
   var page = (e && e.parameter && e.parameter.page) || 'login';
 
   if (page === 'dashboard') {
-    return HtmlService.createTemplateFromFile('Dashboard')
-      .evaluate()
+    // Retrieve logged-in user name from session token
+    var loggedInName = 'User';
+    var token = (e && e.parameter && e.parameter.token) || '';
+    if (token) {
+      try {
+        var cache = CacheService.getScriptCache();
+        var sessionData = cache.get('session_' + token);
+        if (sessionData) {
+          var parsed = JSON.parse(sessionData);
+          loggedInName = parsed.name || 'User';
+        }
+      } catch (ex) {}
+    }
+
+    var template = HtmlService.createTemplateFromFile('Dashboard');
+    template.loggedInName = loggedInName;
+    return template.evaluate()
       .setTitle('UWC Immersive Zone - Analytics Dashboard')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
@@ -828,14 +843,15 @@ function verifyAuthCode(email, code) {
 
         // Generate session token
         var token = Utilities.getUuid();
+        var userName = data[i][1] || 'User';
         var cache = CacheService.getScriptCache();
-        cache.put('session_' + token, email, 3600); // 1 hour session
+        cache.put('session_' + token, JSON.stringify({ email: email, name: userName }), 3600);
 
         return {
           success: true,
-          name: data[i][1],
+          name: userName,
           token: token,
-          dashboardUrl: ScriptApp.getService().getUrl() + '?page=dashboard'
+          dashboardUrl: ScriptApp.getService().getUrl() + '?page=dashboard&token=' + token
         };
       }
     }

@@ -49,6 +49,7 @@
   // ========================================
   document.addEventListener('DOMContentLoaded', function() {
     bustImageCache();
+    setLoggedInName();
     setCurrentDate();
     initializePeriodButtons();
     initializeCharts();
@@ -64,6 +65,13 @@
         img.setAttribute('src', src + cacheBuster);
       }
     });
+  }
+
+  function setLoggedInName() {
+    var nameEl = document.getElementById('loggedInName');
+    if (nameEl && window.LOGGED_IN_NAME && window.LOGGED_IN_NAME !== 'User') {
+      nameEl.textContent = window.LOGGED_IN_NAME;
+    }
   }
 
   function setCurrentDate() {

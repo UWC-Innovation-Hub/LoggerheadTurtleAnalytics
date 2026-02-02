@@ -176,10 +176,30 @@
     transform: translateY(2px);
   }
 
+  .header-actions-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
   .header-actions {
     display: flex;
     align-items: center;
     gap: var(--space-md);
+  }
+
+  .header-logged-in {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    letter-spacing: 0.3px;
+  }
+
+  .header-logged-in strong {
+    color: var(--uwc-blue);
+    font-weight: 600;
   }
 
   .btn-export {
