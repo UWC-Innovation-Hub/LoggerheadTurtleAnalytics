@@ -702,12 +702,15 @@ function sendAuthCode(email) {
  */
 function sendEmailViaPHP(email, name, code) {
   try {
+    var apiKey = PropertiesService.getScriptProperties().getProperty('PHP_API_KEY') || 'tto-contact-form-2024-xyz';
+
     var payload = {
       to: email,
       name: name || 'User',
       subject: 'UWC Immersive Zone - Your Login Code',
       code: code,
-      template: 'auth_code'
+      template: 'auth_code',
+      api_key: apiKey
     };
 
     var options = {
