@@ -720,23 +720,34 @@ function sendEmailViaPHP(email, name, code) {
     var response = UrlFetchApp.fetch('https://innovationhub.uwc.ac.za/sendmail-api.php', options);
     var status = response.getResponseCode();
     Logger.log('Email API response: ' + status + ' - ' + response.getContentText());
-    return status === 200;
+    if (status === 200) return true;
+
+    // PHP API failed — fall through to Gmail fallback
+    Logger.log('PHP API non-200, falling back to GmailApp');
+    return sendViaGmail(email, name, code);
   } catch (e) {
     Logger.log('sendEmailViaPHP error: ' + e);
-    // Fallback: send via GmailApp
-    try {
-      GmailApp.sendEmail(email, 'UWC Immersive Zone - Your Login Code',
-        'Hi ' + (name || 'User') + ',\n\nYour login code is: ' + code + '\n\nThis code expires in 10 minutes.\n\nUWC Immersive Zone',
-        {
-          name: 'UWC Immersive Zone',
-          htmlBody: buildAuthEmailHtml(name, code)
-        }
-      );
-      return true;
-    } catch (e2) {
-      Logger.log('GmailApp fallback error: ' + e2);
-      return false;
-    }
+    return sendViaGmail(email, name, code);
+  }
+}
+
+/**
+ * Fallback: send auth code via GmailApp
+ */
+function sendViaGmail(email, name, code) {
+  try {
+    GmailApp.sendEmail(email, 'UWC Immersive Zone - Your Login Code',
+      'Hi ' + (name || 'User') + ',\n\nYour login code is: ' + code + '\n\nThis code expires in 10 minutes.\n\nUWC Immersive Zone',
+      {
+        name: 'UWC Immersive Zone',
+        htmlBody: buildAuthEmailHtml(name, code)
+      }
+    );
+    Logger.log('Email sent via GmailApp to ' + email);
+    return true;
+  } catch (e) {
+    Logger.log('GmailApp fallback error: ' + e);
+    return false;
   }
 }
 
