@@ -686,8 +686,27 @@ function sendAuthCode(email) {
   try {
     if (!email) return { success: false, error: 'NO_EMAIL' };
     email = String(email).trim().toLowerCase();
+
+    // Anti-spam: 30-second cooldown between requests per email
+    var cache = CacheService.getScriptCache();
+    var cooldownKey = 'cooldown_' + email;
+    if (cache.get(cooldownKey)) {
+      return { success: false, error: 'RATE_LIMITED' };
+    }
+
+    // Anti-spam: max 3 code requests per email per 15 minutes
+    var countKey = 'reqcount_' + email;
+    var reqCount = parseInt(cache.get(countKey)) || 0;
+    if (reqCount >= 3) {
+      return { success: false, error: 'TOO_MANY_REQUESTS' };
+    }
+
     var userCheck = checkUserEmail(email);
     if (!userCheck.success) return userCheck;
+
+    // Set rate limit markers
+    cache.put(cooldownKey, 'true', 30);           // 30-second cooldown
+    cache.put(countKey, String(reqCount + 1), 900); // 15-minute window
 
     var code = generateAuthCode();
     var now = new Date();

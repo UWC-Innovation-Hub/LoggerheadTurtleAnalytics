@@ -83,6 +83,12 @@
         case 'EMAIL_FAILED':
           showError('emailError', 'Failed to send verification email. Please try again.');
           break;
+        case 'RATE_LIMITED':
+          showError('emailError', 'Please wait 30 seconds before requesting another code.');
+          break;
+        case 'TOO_MANY_REQUESTS':
+          showError('emailError', 'Too many requests. Please try again in 15 minutes.');
+          break;
         default:
           showError('emailError', 'An error occurred. Please try again.');
       }
