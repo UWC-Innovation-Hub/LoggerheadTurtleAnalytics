@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a1a5c;
+      color: #fff;
+      min-height: 100vh;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    /* ── Full-screen preloader ── */
+    .preloader {
+      position: fixed;
+      inset: 0;
+      background: #0a1a5c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.5s ease;
+    }
+
+    .preloader.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .preloader-content {
+      text-align: center;
+      width: 340px;
+      max-width: 90vw;
+    }
+
+    .preloader-logo {
+      width: 180px;
+      opacity: 0.95;
+      margin-bottom: 28px;
+      animation: logoPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes logoPulse {
+      0%, 100% { opacity: 0.95; }
+      50%      { opacity: 0.7; }
+    }
+
+    .preloader-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 6px;
+      opacity: 0.95;
+    }
+
+    .preloader-subtitle {
+      font-size: 0.75rem;
+      opacity: 0.5;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+
+    .preloader-bar {
+      width: 100%;
+      height: 5px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .preloader-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #bd9a4f 0%, #d4b76a 50%, #bd9a4f 100%);
+      background-size: 200% 100%;
+      border-radius: 3px;
+      width: 0%;
+      animation: fillBar 3s ease-out forwards, shimmer 1.5s ease-in-out infinite;
+    }
+
+    @keyframes fillBar {
+      0%   { width: 0%; }
+      20%  { width: 25%; }
+      50%  { width: 55%; }
+      75%  { width: 80%; }
+      90%  { width: 92%; }
+      100% { width: 100%; }
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .preloader-status {
+      font-size: 0.7rem;
+      opacity: 0.4;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      transition: opacity 0.3s;
+    }
+
+    .preloader-skip {
+      margin-top: 32px;
+      font-size: 0.65rem;
+      opacity: 0.3;
+      letter-spacing: 0.5px;
+    }
+
+    .preloader-skip span {
+      border-bottom: 1px dotted rgba(255,255,255,0.3);
+      padding-bottom: 1px;
+    }
+
+    /* ── Decorative background turtle silhouette ── */
+    .preloader-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .preloader-bg-img {
+      position: absolute;
+      bottom: -10%;
+      right: -5%;
+      width: 45%;
+      max-width: 400px;
+      opacity: 0.04;
+      filter: brightness(0) invert(1);
+    }
+
+    /* ── Partners badge ── */
+    .preloader-partners {
+      position: fixed;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      z-index: 101;
+      font-size: 0.6rem;
+      opacity: 0.3;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    /* Hidden redirect link */
+    .hidden-link {
+      position: absolute;
+      left: -9999px;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body onclick="goNow()">
+
+  <!-- Hidden link — Apps Script sandbox blocks window.open/_top JS,
+       but clicking an <a target="_top"> link works inside sandboxed iframes -->
+  <a id="redirectLink" class="hidden-link"
+     href="https://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/"
+     target="_top">Go</a>
+
+  <!-- Subtle background turtle -->
+  <div class="preloader-bg">
+    <img class="preloader-bg-img"
+         src="https://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/img/logger-head-turtle_xio2vp.png"
+         alt="">
+  </div>
+
+  <!-- Preloader -->
+  <div class="preloader" id="preloader">
+    <div class="preloader-content">
+      <img src="https://innovationhub.uwc.ac.za/img/UIH_Logo_FA_white.png"
+           alt="UWC Immersive Zone"
+           class="preloader-logo">
+      <div class="preloader-title">Interactive Loggerhead Turtle Hatchlings</div>
+      <div class="preloader-subtitle">
+        Marine conservation &middot; 3D learning experience
+      </div>
+      <div class="preloader-bar">
+        <div class="preloader-fill"></div>
+      </div>
+      <div class="preloader-status" id="statusText">Loading project page...</div>
+      <div class="preloader-skip">
+        <span>Click anywhere to open now</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="preloader-partners">
+    UWC &middot; Faculty of Natural Sciences &middot; Immersive Zone
+  </div>
+
+  <!-- Google tag (gtag.js) — track embed views -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-0Z287Y6Y1G"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-0Z287Y6Y1G', { send_page_view: true });
+
+    var REDIRECT_DELAY = 3200;
+    var hasNavigated = false;
+
+    // Status text animation
+    var statusEl = document.getElementById('statusText');
+    var steps = [
+      { at: 600,  text: 'Connecting to InnovationHub...' },
+      { at: 1400, text: 'Preparing interactive experience...' },
+      { at: 2400, text: 'Almost ready...' },
+      { at: 3000, text: 'Redirecting...' }
+    ];
+
+    steps.forEach(function(s) {
+      setTimeout(function() {
+        if (!hasNavigated && statusEl) statusEl.textContent = s.text;
+      }, s.at);
+    });
+
+    // Auto-redirect after progress bar completes
+    setTimeout(function() {
+      if (!hasNavigated) navigate();
+    }, REDIRECT_DELAY);
+
+    // Click anywhere = skip, go now
+    function goNow() {
+      if (!hasNavigated) navigate();
+    }
+
+    function navigate() {
+      hasNavigated = true;
+
+      // Fire GA4 event via beacon so it sends before navigation
+      gtag('event', 'embed_click_through', {
+        event_category: 'engagement',
+        event_label: 'Google Sites Embed',
+        transport_type: 'beacon'
+      });
+
+      // Fade out
+      var pre = document.getElementById('preloader');
+      if (pre) pre.classList.add('fade-out');
+
+      // Use hidden <a target="_top"> link — this works in Apps Script
+      // iframe sandbox where window.open/_top is blocked
+      setTimeout(function() {
+        document.getElementById('redirectLink').click();
+      }, 350);
+    }
+  </script>
+</body>
+</html>

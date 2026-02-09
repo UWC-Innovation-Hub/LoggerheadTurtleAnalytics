@@ -49,6 +49,14 @@ function doGet(e) {
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
 
+  // Embeddable preloader/redirect — for Google Sites iframe
+  if (page === 'embed') {
+    return HtmlService.createHtmlOutputFromFile('Embed')
+      .setTitle('Loggerhead Turtle Hatchlings - UWC Immersive Zone')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
   // Default: serve login page
   return HtmlService.createTemplateFromFile('Login')
     .evaluate()
