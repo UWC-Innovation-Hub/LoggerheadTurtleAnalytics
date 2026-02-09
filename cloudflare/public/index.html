@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  
+
   <!-- Google tag (gtag.js) — track dashboard visits & outbound clicks -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-0Z287Y6Y1G"></script>
   <script>
@@ -26,12 +26,12 @@
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  
+
   <!-- jsPDF for PDF Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  
-  <?!= include('Stylesheet'); ?>
+
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- Preloader Overlay -->
@@ -617,24 +617,6 @@
     </div>
   </div>
 
-  <script>
-    window.LOGGED_IN_NAME = '<?= loggedInName ?>';
-    window.SESSION_TOKEN = '<?= sessionToken ?>';
-    // Persist session across all available storage layers (handles blocked 3rd-party cookies)
-    if (window.SESSION_TOKEN) {
-      try { sessionStorage.setItem('uwc_session_token', window.SESSION_TOKEN); } catch(e) {}
-      try { sessionStorage.setItem('uwc_session_name', window.LOGGED_IN_NAME); } catch(e) {}
-      try { localStorage.setItem('uwc_session_token', window.SESSION_TOKEN); } catch(e) {}
-      try { localStorage.setItem('uwc_session_name', window.LOGGED_IN_NAME); } catch(e) {}
-      // Notify parent frame to store token (survives iframe navigation)
-      try {
-        if (window.top !== window) {
-          window.top.postMessage({ type: 'uwc_session_store', key: 'uwc_session_token', value: window.SESSION_TOKEN }, '*');
-          window.top.postMessage({ type: 'uwc_session_store', key: 'uwc_session_name', value: window.LOGGED_IN_NAME }, '*');
-        }
-      } catch(e) {}
-    }
-  </script>
-  <?!= include('JavaScript'); ?>
+  <script src="app.js"></script>
 </body>
 </html>

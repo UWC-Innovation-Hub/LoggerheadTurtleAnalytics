@@ -19,20 +19,30 @@ function doGet(e) {
   if (page === 'dashboard') {
     // Retrieve logged-in user name from session token
     var loggedInName = 'User';
+    var sessionValid = false;
     var token = (e && e.parameter && e.parameter.token) || '';
     if (token) {
       try {
-        var cache = CacheService.getScriptCache();
-        var sessionData = cache.get('session_' + token);
+        var sessionData = getSessionData(token);
         if (sessionData) {
-          var parsed = JSON.parse(sessionData);
-          loggedInName = parsed.name || 'User';
+          loggedInName = sessionData.name || 'User';
+          sessionValid = true;
         }
       } catch (ex) {}
     }
 
+    // If no valid session, redirect to login
+    if (!sessionValid) {
+      return HtmlService.createTemplateFromFile('Login')
+        .evaluate()
+        .setTitle('UWC Immersive Zone - Login')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+    }
+
     var template = HtmlService.createTemplateFromFile('Dashboard');
     template.loggedInName = loggedInName;
+    template.sessionToken = token;
     return template.evaluate()
       .setTitle('UWC Immersive Zone - Analytics Dashboard')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -45,6 +55,66 @@ function doGet(e) {
     .setTitle('UWC Immersive Zone - Login')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/**
+ * JSON API endpoint for Cloudflare Pages frontend.
+ * Receives POST with {action, params, token} and routes to existing functions.
+ */
+function doPost(e) {
+  try {
+    var body = JSON.parse(e.postData.contents);
+    var action = body.action;
+    var params = body.params || {};
+    var token = body.token || '';
+
+    // Actions that do NOT require a valid session
+    var publicActions = ['validateSession'];
+
+    // Validate session for all protected actions
+    if (publicActions.indexOf(action) === -1) {
+      var session = getSessionData(token);
+      if (!session) {
+        return jsonResponse({ success: false, error: 'INVALID_SESSION' });
+      }
+    }
+
+    var result;
+    switch (action) {
+      case 'fetchAllDashboardData':
+        result = fetchAllDashboardData(params.period || 'WEEKLY');
+        break;
+      case 'validateSession':
+        result = validateSession(params.token || token);
+        break;
+      case 'signOut':
+        result = signOut(params.token || token);
+        break;
+      case 'getAppVersion':
+        result = getAppVersion();
+        break;
+      case 'getDeploymentVersion':
+        result = getDeploymentVersion();
+        break;
+      case 'fetchLogoAsBase64':
+        result = fetchLogoAsBase64();
+        break;
+      default:
+        result = { success: false, error: 'UNKNOWN_ACTION' };
+    }
+
+    return jsonResponse(result);
+  } catch (err) {
+    return jsonResponse({ success: false, error: err.toString() });
+  }
+}
+
+/**
+ * Helper to return JSON from doPost
+ */
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
@@ -134,14 +204,59 @@ function getDateRange(period) {
 }
 
 /**
- * Fetch overview metrics from GA4
+ * Get the previous period date range for comparison
+ */
+function getPreviousDateRange(period) {
+  const today = new Date();
+  let startDate, endDate;
+
+  switch(period) {
+    case 'DAU':
+      // Previous day
+      const yesterday = new Date(today.getTime() - 1 * 24 * 60 * 60 * 1000);
+      startDate = Utilities.formatDate(yesterday, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      endDate = startDate;
+      break;
+    case 'WEEKLY':
+      const prevWeekEnd = new Date(today.getTime() - 8 * 24 * 60 * 60 * 1000);
+      const prevWeekStart = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+      startDate = Utilities.formatDate(prevWeekStart, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      endDate = Utilities.formatDate(prevWeekEnd, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      break;
+    case 'MONTHLY':
+      const prevMonthEnd = new Date(today.getTime() - 31 * 24 * 60 * 60 * 1000);
+      const prevMonthStart = new Date(today.getTime() - 61 * 24 * 60 * 60 * 1000);
+      startDate = Utilities.formatDate(prevMonthStart, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      endDate = Utilities.formatDate(prevMonthEnd, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      break;
+    case 'YEARLY':
+      const prevYearEnd = new Date(today.getTime() - 366 * 24 * 60 * 60 * 1000);
+      const prevYearStart = new Date(today.getTime() - 731 * 24 * 60 * 60 * 1000);
+      startDate = Utilities.formatDate(prevYearStart, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      endDate = Utilities.formatDate(prevYearEnd, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      break;
+    default:
+      const defEnd = new Date(today.getTime() - 31 * 24 * 60 * 60 * 1000);
+      const defStart = new Date(today.getTime() - 61 * 24 * 60 * 60 * 1000);
+      startDate = Utilities.formatDate(defStart, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      endDate = Utilities.formatDate(defEnd, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return { startDate, endDate };
+}
+
+/**
+ * Fetch overview metrics from GA4 with comparison to previous period
  */
 function fetchOverviewMetrics(period) {
   try {
     const { startDate, endDate } = getDateRange(period);
-    
+    const prev = getPreviousDateRange(period);
+
     const requestBody = {
-      dateRanges: [{ startDate: startDate, endDate: endDate }],
+      dateRanges: [
+        { startDate: startDate, endDate: endDate },
+        { startDate: prev.startDate, endDate: prev.endDate }
+      ],
       metrics: [
         { name: 'totalUsers' },
         { name: 'newUsers' },
@@ -153,40 +268,65 @@ function fetchOverviewMetrics(period) {
         { name: 'activeUsers' }
       ]
     };
-    
+
     const result = makeGA4Request(requestBody);
-    
+
     if (result.success && result.data.rows && result.data.rows.length > 0) {
-      const values = result.data.rows[0].metricValues;
+      // First row = current period, second row = previous period (if exists)
+      var currentVals = result.data.rows[0].metricValues;
+      var prevVals = result.data.rows.length > 1 ? result.data.rows[1].metricValues : null;
+
+      var cur = {
+        totalUsers: parseInt(currentVals[0].value) || 0,
+        newUsers: parseInt(currentVals[1].value) || 0,
+        sessions: parseInt(currentVals[2].value) || 0,
+        pageViews: parseInt(currentVals[3].value) || 0,
+        avgSessionDuration: parseFloat(currentVals[4].value) || 0,
+        bounceRate: (parseFloat(currentVals[5].value) * 100).toFixed(1),
+        engagementRate: (parseFloat(currentVals[6].value) * 100).toFixed(1),
+        activeUsers: parseInt(currentVals[7].value) || 0
+      };
+
+      // Calculate % changes vs previous period
+      var changes = { totalUsers: null, sessions: null, pageViews: null, avgSessionDuration: null };
+      if (prevVals) {
+        var prevUsers = parseInt(prevVals[0].value) || 0;
+        var prevSessions = parseInt(prevVals[2].value) || 0;
+        var prevPageViews = parseInt(prevVals[3].value) || 0;
+        var prevDuration = parseFloat(prevVals[4].value) || 0;
+
+        changes.totalUsers = prevUsers > 0 ? Math.round(((cur.totalUsers - prevUsers) / prevUsers) * 100) : (cur.totalUsers > 0 ? 100 : 0);
+        changes.sessions = prevSessions > 0 ? Math.round(((cur.sessions - prevSessions) / prevSessions) * 100) : (cur.sessions > 0 ? 100 : 0);
+        changes.pageViews = prevPageViews > 0 ? Math.round(((cur.pageViews - prevPageViews) / prevPageViews) * 100) : (cur.pageViews > 0 ? 100 : 0);
+        changes.avgSessionDuration = prevDuration > 0 ? Math.round(((cur.avgSessionDuration - prevDuration) / prevDuration) * 100) : 0;
+      }
+
+      cur.changes = changes;
+
       return {
         success: true,
-        data: {
-          totalUsers: parseInt(values[0].value) || 0,
-          newUsers: parseInt(values[1].value) || 0,
-          sessions: parseInt(values[2].value) || 0,
-          pageViews: parseInt(values[3].value) || 0,
-          avgSessionDuration: parseFloat(values[4].value) || 0,
-          bounceRate: (parseFloat(values[5].value) * 100).toFixed(1),
-          engagementRate: (parseFloat(values[6].value) * 100).toFixed(1),
-          activeUsers: parseInt(values[7].value) || 0
-        },
+        data: cur,
         period,
         dateRange: { startDate, endDate }
       };
     }
-    
+
     // Return empty data if no results
-    return { 
-      success: true, 
-      data: getEmptyMetrics(), 
-      period, 
+    var emptyData = getEmptyMetrics();
+    emptyData.changes = { totalUsers: null, sessions: null, pageViews: null, avgSessionDuration: null };
+    return {
+      success: true,
+      data: emptyData,
+      period,
       dateRange: { startDate, endDate },
       note: result.error || 'No data available for this period'
     };
-    
+
   } catch (error) {
     Logger.log('Error fetching overview metrics: ' + error.toString());
-    return { success: false, error: error.toString(), data: getEmptyMetrics() };
+    var emptyErr = getEmptyMetrics();
+    emptyErr.changes = { totalUsers: null, sessions: null, pageViews: null, avgSessionDuration: null };
+    return { success: false, error: error.toString(), data: emptyErr };
   }
 }
 
@@ -503,19 +643,190 @@ function fetchUserAcquisition(period) {
 }
 
 /**
+ * Fetch GA4 event data — event names with their counts
+ */
+function fetchEventData(period) {
+  try {
+    const { startDate, endDate } = getDateRange(period);
+
+    const requestBody = {
+      dateRanges: [{ startDate: startDate, endDate: endDate }],
+      dimensions: [{ name: 'eventName' }],
+      metrics: [
+        { name: 'eventCount' },
+        { name: 'totalUsers' }
+      ],
+      orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+      limit: 20
+    };
+
+    const result = makeGA4Request(requestBody);
+
+    if (result.success && result.data.rows && result.data.rows.length > 0) {
+      const events = result.data.rows.map(row => ({
+        name: row.dimensionValues[0].value || 'Unknown',
+        count: parseInt(row.metricValues[0].value) || 0,
+        users: parseInt(row.metricValues[1].value) || 0
+      }));
+
+      return { success: true, data: events };
+    }
+
+    return { success: true, data: [] };
+
+  } catch (error) {
+    Logger.log('Error fetching event data: ' + error.toString());
+    return { success: false, error: error.toString() };
+  }
+}
+
+/**
+ * Fetch real-time active users from GA4 Realtime API
+ */
+function fetchRealtimeUsers() {
+  try {
+    var realtimeUrl = 'https://analyticsdata.googleapis.com/v1beta/properties/' + GA4_PROPERTY_ID + ':runRealtimeReport';
+
+    var requestBody = {
+      metrics: [{ name: 'activeUsers' }]
+    };
+
+    var options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'Authorization': 'Bearer ' + ScriptApp.getOAuthToken()
+      },
+      payload: JSON.stringify(requestBody),
+      muteHttpExceptions: true
+    };
+
+    var response = UrlFetchApp.fetch(realtimeUrl, options);
+    var code = response.getResponseCode();
+
+    if (code === 200) {
+      var data = JSON.parse(response.getContentText());
+      if (data.rows && data.rows.length > 0) {
+        return { success: true, activeUsers: parseInt(data.rows[0].metricValues[0].value) || 0 };
+      }
+      return { success: true, activeUsers: 0 };
+    }
+
+    return { success: false, activeUsers: 0, error: 'API ' + code };
+  } catch (e) {
+    Logger.log('Realtime API error: ' + e);
+    return { success: false, activeUsers: 0, error: e.toString() };
+  }
+}
+
+/**
  * Fetch all dashboard data at once
  */
 function fetchAllDashboardData(period) {
+  // Wrap each call in try/catch so one failure doesn't kill the entire response
+  function safeFetch(fn) {
+    try { return fn(); }
+    catch(e) { return { success: false, error: e.toString() }; }
+  }
+
   return {
-    overview: fetchOverviewMetrics(period),
-    timeSeries: fetchTimeSeriesData(period),
-    trafficSources: fetchTrafficSources(period),
-    topPages: fetchTopPages(period),
-    devices: fetchDeviceData(period),
-    countries: fetchCountryData(period),
-    engagement: fetchEngagementMetrics(period),
-    acquisition: fetchUserAcquisition(period)
+    overview: safeFetch(function() { return fetchOverviewMetrics(period); }),
+    timeSeries: safeFetch(function() { return fetchTimeSeriesData(period); }),
+    trafficSources: safeFetch(function() { return fetchTrafficSources(period); }),
+    topPages: safeFetch(function() { return fetchTopPages(period); }),
+    devices: safeFetch(function() { return fetchDeviceData(period); }),
+    countries: safeFetch(function() { return fetchCountryData(period); }),
+    engagement: safeFetch(function() { return fetchEngagementMetrics(period); }),
+    acquisition: safeFetch(function() { return fetchUserAcquisition(period); }),
+    events: safeFetch(function() { return fetchEventData(period); }),
+    realtime: safeFetch(function() { return fetchRealtimeUsers(); })
   };
+}
+
+/**
+ * Returns the current deployment version stamp.
+ * Updated automatically each time the script is deployed.
+ * Clients poll this to detect new deployments.
+ */
+function getDeploymentVersion() {
+  var props = PropertiesService.getScriptProperties();
+  var version = props.getProperty('DEPLOYMENT_VERSION');
+  if (!version) {
+    // Initialize on first call
+    version = new Date().toISOString();
+    props.setProperty('DEPLOYMENT_VERSION', version);
+  }
+  return version;
+}
+
+/**
+ * Call this after each new deployment to bump the version stamp.
+ * Run manually from the Apps Script editor after deploying.
+ */
+function bumpDeploymentVersion() {
+  var version = new Date().toISOString();
+  PropertiesService.getScriptProperties().setProperty('DEPLOYMENT_VERSION', version);
+  // Also bump the numeric app version
+  bumpAppVersion();
+  Logger.log('Deployment version bumped to: ' + version);
+  return version;
+}
+
+/**
+ * Numeric app version counter.
+ * Stored as an integer in script properties (e.g. 1, 2, ... 15, ... 101).
+ * Formatted as "0.XX" for versions < 100, "X.XX" for >= 100.
+ * Example: 15 → "0.15", 99 → "0.99", 100 → "1.00", 101 → "1.01", 250 → "2.50"
+ */
+function getAppVersion() {
+  var props = PropertiesService.getScriptProperties();
+  var num = parseInt(props.getProperty('APP_VERSION') || '0', 10);
+  if (num <= 0) {
+    // Initialize at version 1
+    num = 1;
+    props.setProperty('APP_VERSION', String(num));
+  }
+  return formatAppVersion(num);
+}
+
+function getAppVersionNumber() {
+  var props = PropertiesService.getScriptProperties();
+  return parseInt(props.getProperty('APP_VERSION') || '1', 10);
+}
+
+function formatAppVersion(num) {
+  var major = Math.floor(num / 100);
+  var minor = num % 100;
+  return major + '.' + (minor < 10 ? '0' : '') + minor;
+}
+
+/**
+ * Bump the numeric app version by 1.
+ * Run manually or called by bumpDeploymentVersion().
+ */
+function bumpAppVersion() {
+  var props = PropertiesService.getScriptProperties();
+  var num = parseInt(props.getProperty('APP_VERSION') || '0', 10) + 1;
+  props.setProperty('APP_VERSION', String(num));
+  var formatted = formatAppVersion(num);
+  Logger.log('App version bumped to: ' + formatted + ' (build ' + num + ')');
+  return formatted;
+}
+
+/**
+ * Set the app version to a specific number.
+ * Run from Apps Script editor: setAppVersion(15) → "0.15"
+ */
+function setAppVersion(num) {
+  num = parseInt(num, 10);
+  if (isNaN(num) || num < 1) {
+    Logger.log('Error: setAppVersion requires a positive integer. Example: setAppVersion(15) → "0.15"');
+    return 'Error: provide a number, e.g. setAppVersion(15)';
+  }
+  PropertiesService.getScriptProperties().setProperty('APP_VERSION', String(num));
+  var formatted = formatAppVersion(num);
+  Logger.log('App version set to: ' + formatted + ' (build ' + num + ')');
+  return formatted;
 }
 
 /**
@@ -542,7 +853,7 @@ function getProjectInfo() {
     name: 'Interactive Loggerhead Turtle Hatchlings',
     propertyId: GA4_PROPERTY_ID,
     accountId: '382632926',
-    siteUrl: 'https://sites.google.com/uwc.ac.za/idealoceanhome/interactive-loggerhead-turtle-hatchlings'
+    siteUrl: 'https://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/'
   };
 }
 
@@ -681,6 +992,7 @@ function generateAuthCode() {
 
 /**
  * Send auth code to user's email via PHP mail API
+ * Also pre-builds the session token and dashboard URL so verification is instant.
  */
 function sendAuthCode(email) {
   try {
@@ -711,12 +1023,27 @@ function sendAuthCode(email) {
     var code = generateAuthCode();
     var now = new Date();
 
-    // Store code in sheet
+    // Store code in sheet — batch write (single call instead of 3)
     var sheet = getUsersSheet();
     var row = userCheck.row;
-    sheet.getRange(row, 5).setValue(code);           // Auth Code column
-    sheet.getRange(row, 6).setValue(now.toISOString()); // Code Timestamp
-    sheet.getRange(row, 7).setValue(0);              // Reset attempts
+    sheet.getRange(row, 5, 1, 3).setValues([[code, now.toISOString(), 0]]);
+
+    // Pre-build session token & dashboard URL during this step
+    // so verifyAuthCode can return instantly without extra API calls
+    var token = Utilities.getUuid();
+    var cfUrl = PropertiesService.getScriptProperties().getProperty('CF_DASHBOARD_URL');
+    var dashboardUrl;
+    if (cfUrl) {
+      dashboardUrl = cfUrl + '?token=' + token;
+    } else {
+      var scriptUrl = ScriptApp.getService().getUrl();
+      dashboardUrl = scriptUrl + '?page=dashboard&token=' + token;
+    }
+    cache.put('pending_session_' + email, JSON.stringify({
+      token: token,
+      name: userCheck.name,
+      dashboardUrl: dashboardUrl
+    }), 660); // 11 minutes (slightly longer than code expiry)
 
     // Send via PHP API
     var sent = sendEmailViaPHP(email, userCheck.name, code);
@@ -738,11 +1065,12 @@ function sendEmailViaPHP(email, name, code) {
   try {
     var apiKey = PropertiesService.getScriptProperties().getProperty('PHP_API_KEY') || 'uwc-analytics-2025-sec';
 
+    var emailSubject = 'UWC Immersive Zone - Loggerhead Turtle Analytics Dashboard Login Code';
     var payload = {
       to: email,
-      subject: 'UWC Immersive Zone - Your Login Code',
+      subject: emailSubject,
       html: buildAuthEmailHtml(name, code),
-      text: 'Hi ' + (name || 'User') + ',\n\nYour login code is: ' + code + '\n\nThis code expires in 10 minutes.\n\nUWC Immersive Zone',
+      text: 'Hi ' + (name || 'User') + ',\n\nYou requested access to the Loggerhead Turtle Analytics Dashboard.\n\nYour login verification code is: ' + code + '\n\nThis code expires in 10 minutes. If you did not request this, please ignore this email.\n\nUWC Immersive Zone\nhttps://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/',
       fromName: 'UWC Immersive Zone'
     };
 
@@ -775,8 +1103,9 @@ function sendEmailViaPHP(email, name, code) {
  */
 function sendViaGmail(email, name, code) {
   try {
-    GmailApp.sendEmail(email, 'UWC Immersive Zone - Your Login Code',
-      'Hi ' + (name || 'User') + ',\n\nYour login code is: ' + code + '\n\nThis code expires in 10 minutes.\n\nUWC Immersive Zone',
+    var emailSubject = 'UWC Immersive Zone - Loggerhead Turtle Analytics Dashboard Login Code';
+    GmailApp.sendEmail(email, emailSubject,
+      'Hi ' + (name || 'User') + ',\n\nYou requested access to the Loggerhead Turtle Analytics Dashboard.\n\nYour login verification code is: ' + code + '\n\nThis code expires in 10 minutes. If you did not request this, please ignore this email.\n\nUWC Immersive Zone\nhttps://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/',
       {
         name: 'UWC Immersive Zone',
         htmlBody: buildAuthEmailHtml(name, code)
@@ -794,26 +1123,57 @@ function sendViaGmail(email, name, code) {
  * Build branded HTML email for auth code
  */
 function buildAuthEmailHtml(name, code) {
-  return '<div style="max-width:480px;margin:0 auto;font-family:Arial,sans-serif;">' +
-    '<div style="background:#0a1a5c;padding:24px;text-align:center;">' +
-    '<h2 style="color:#ffffff;margin:0;font-size:18px;">UWC Immersive Zone</h2>' +
+  return '<div style="max-width:680px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">' +
+    // Header — UWC blue banner with logo
+    '<div style="background:#0a1a5c;padding:36px 40px;text-align:center;">' +
+    '<img src="https://innovationhub.uwc.ac.za/img/UIH_Logo_FA_white.png" alt="UWC Immersive Zone" style="height:56px;width:auto;margin-bottom:12px;" />' +
+    '<h2 style="color:#ffffff;margin:0;font-size:20px;font-weight:600;letter-spacing:0.5px;">Loggerhead Turtle Analytics Dashboard</h2>' +
+    '<p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">Interactive Loggerhead Turtle Hatchlings</p>' +
     '</div>' +
-    '<div style="padding:32px 24px;background:#ffffff;">' +
-    '<p style="color:#333;font-size:15px;">Hi ' + (name || 'User') + ',</p>' +
-    '<p style="color:#333;font-size:15px;">Your login verification code is:</p>' +
-    '<div style="text-align:center;margin:24px 0;">' +
-    '<div style="display:inline-block;padding:16px 32px;background:#f8f8f8;border:2px solid #bd9a4f;border-radius:8px;font-size:28px;font-weight:bold;letter-spacing:6px;color:#0a1a5c;">' + code + '</div>' +
+    // Gold accent stripe
+    '<div style="height:4px;background:linear-gradient(90deg,#bd9a4f 0%,#d4b96a 100%);"></div>' +
+    // Body content
+    '<div style="padding:40px 48px;background:#ffffff;">' +
+    '<p style="color:#333;font-size:16px;margin:0 0 18px;">Hi ' + (name || 'User') + ',</p>' +
+    '<p style="color:#555;font-size:15px;margin:0 0 10px;line-height:1.7;">You requested access to the <strong style="color:#0a1a5c;">Loggerhead Turtle Analytics Dashboard</strong> on the UWC Immersive Zone platform.</p>' +
+    '<p style="color:#555;font-size:15px;margin:0 0 24px;line-height:1.7;">Please enter the verification code below to sign in:</p>' +
+    // Code box
+    '<div style="text-align:center;margin:28px 0;">' +
+    '<div style="display:inline-block;padding:20px 44px;background:#fafafa;border:2px solid #bd9a4f;border-radius:12px;font-size:36px;font-weight:bold;letter-spacing:10px;color:#0a1a5c;">' + code + '</div>' +
     '</div>' +
-    '<p style="color:#666;font-size:13px;">This code expires in 10 minutes. If you did not request this, please ignore this email.</p>' +
+    '<p style="color:#888;font-size:13px;margin:24px 0 0;text-align:center;">This code expires in <strong>10 minutes</strong>. If you did not request this, please ignore this email.</p>' +
     '</div>' +
-    '<div style="background:#f5f5f5;padding:16px;text-align:center;font-size:12px;color:#999;">' +
-    'University of the Western Cape | UWC Immersive Zone' +
+    // Project preview section
+    '<div style="padding:0 48px 36px;background:#ffffff;">' +
+    '<div style="border-top:1px solid #eee;padding-top:24px;">' +
+    '<p style="color:#0a1a5c;font-size:14px;font-weight:600;margin:0 0 14px;text-align:center;">About this project</p>' +
+    '<a href="https://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/" target="_blank" style="display:block;text-decoration:none;">' +
+    '<div style="background:#f0f4f8;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;">' +
+    '<div style="background:#0a1a5c;padding:16px 24px;display:flex;align-items:center;">' +
+    '<img src="https://innovationhub.uwc.ac.za/img/UIH_Logo_FA_white.png" alt="UWC" style="height:32px;width:auto;margin-right:14px;" />' +
+    '<span style="color:#fff;font-size:14px;font-weight:600;">Ideal Ocean Home</span>' +
+    '</div>' +
+    '<img src="https://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/img/logger-head-turtle_pagepreview.png" alt="Interactive Loggerhead Turtle Hatchlings 3D Model" style="width:100%;height:auto;display:block;" />' +
+    '<div style="padding:14px 20px;background:#ffffff;">' +
+    '<p style="margin:0;font-size:13px;color:#0a1a5c;font-weight:600;">Interactive Loggerhead Turtle Hatchlings</p>' +
+    '<p style="margin:4px 0 0;font-size:12px;color:#777;">UWC Immersive Zone &amp; Faculty of Natural Sciences</p>' +
+    '</div>' +
+    '</div>' +
+    '</a>' +
+    '<p style="color:#777;font-size:12px;margin:12px 0 0;text-align:center;line-height:1.5;">Track engagement and performance metrics for the Interactive Loggerhead Turtle Hatchlings educational experience.</p>' +
+    '</div>' +
+    '</div>' +
+    // Footer
+    '<div style="background:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #eee;">' +
+    '<p style="margin:0 0 4px;font-size:13px;color:#888;">University of the Western Cape | UWC Immersive Zone</p>' +
+    '<p style="margin:0;font-size:12px;color:#aaa;">405 Voortrekker Road, Oostersee, Cape Town, 7500</p>' +
     '</div>' +
     '</div>';
 }
 
 /**
- * Verify the auth code entered by the user
+ * Verify the auth code entered by the user.
+ * Uses the pre-built session from sendAuthCode for instant response.
  */
 function verifyAuthCode(email, code) {
   try {
@@ -835,11 +1195,9 @@ function verifyAuthCode(email, code) {
           return { success: false, error: 'MAX_ATTEMPTS' };
         }
 
-        // Increment attempts
-        sheet.getRange(i + 1, 7).setValue(attempts + 1);
-
-        // Check code
+        // Check code first (increment attempts only on mismatch)
         if (storedCode !== code) {
+          sheet.getRange(i + 1, 7).setValue(attempts + 1);
           return { success: false, error: 'INVALID_CODE', attemptsLeft: 2 - attempts };
         }
 
@@ -853,24 +1211,49 @@ function verifyAuthCode(email, code) {
           }
         }
 
-        // Success — update last login, clear code
+        // Success — batch update: Last Login, clear code, clear timestamp, reset attempts
         var row = i + 1;
-        sheet.getRange(row, 4).setValue(new Date().toISOString()); // Last Login
-        sheet.getRange(row, 5).setValue('');   // Clear auth code
-        sheet.getRange(row, 6).setValue('');   // Clear timestamp
-        sheet.getRange(row, 7).setValue(0);    // Reset attempts
+        sheet.getRange(row, 4, 1, 4).setValues([[new Date().toISOString(), '', '', 0]]);
 
-        // Generate session token
-        var token = Utilities.getUuid();
-        var userName = data[i][1] || 'User';
+        // Retrieve pre-built session from sendAuthCode
         var cache = CacheService.getScriptCache();
-        cache.put('session_' + token, JSON.stringify({ email: email, name: userName }), 3600);
+        var pendingKey = 'pending_session_' + email;
+        var pendingData = cache.get(pendingKey);
+        var token, userName, dashboardUrl;
+
+        if (pendingData) {
+          var pending = JSON.parse(pendingData);
+          token = pending.token;
+          userName = pending.name || data[i][1] || 'User';
+          dashboardUrl = pending.dashboardUrl;
+          cache.remove(pendingKey);
+        } else {
+          // Fallback if pre-built session expired (shouldn't happen normally)
+          token = Utilities.getUuid();
+          userName = data[i][1] || 'User';
+          var cfUrl = PropertiesService.getScriptProperties().getProperty('CF_DASHBOARD_URL');
+          if (cfUrl) {
+            dashboardUrl = cfUrl + '?token=' + token;
+          } else {
+            dashboardUrl = ScriptApp.getService().getUrl() + '?page=dashboard&token=' + token;
+          }
+        }
+
+        // Activate the session — use PropertiesService for persistence (survives cache eviction)
+        var sessionPayload = JSON.stringify({
+          email: email,
+          name: userName,
+          created: new Date().toISOString()
+        });
+        PropertiesService.getScriptProperties().setProperty('session_' + token, sessionPayload);
+        // Also keep in cache for fast reads
+        cache.put('session_' + token, sessionPayload, 21600); // 6 hours cache
 
         return {
           success: true,
           name: userName,
           token: token,
-          dashboardUrl: ScriptApp.getService().getUrl() + '?page=dashboard&token=' + token
+          dashboardUrl: dashboardUrl
         };
       }
     }
@@ -883,16 +1266,77 @@ function verifyAuthCode(email, code) {
 }
 
 /**
+ * Read session from cache first, then PropertiesService fallback.
+ * Sessions expire after 24 hours.
+ */
+function getSessionData(token) {
+  if (!token) return null;
+  try {
+    var cache = CacheService.getScriptCache();
+    var raw = cache.get('session_' + token);
+
+    // Fallback to persistent storage
+    if (!raw) {
+      raw = PropertiesService.getScriptProperties().getProperty('session_' + token);
+      if (raw) {
+        // Re-populate cache for fast future reads
+        cache.put('session_' + token, raw, 21600);
+      }
+    }
+
+    if (!raw) return null;
+
+    var data = JSON.parse(raw);
+
+    // Check 24-hour expiry
+    if (data.created) {
+      var created = new Date(data.created);
+      var now = new Date();
+      var hoursElapsed = (now - created) / (1000 * 60 * 60);
+      if (hoursElapsed > 24) {
+        // Session expired — clean up
+        PropertiesService.getScriptProperties().deleteProperty('session_' + token);
+        cache.remove('session_' + token);
+        return null;
+      }
+    }
+
+    return data;
+  } catch (e) {
+    Logger.log('getSessionData error: ' + e);
+    return null;
+  }
+}
+
+/**
  * Validate session token (called from dashboard)
+ * Returns { valid, name, email } or { valid: false }
  */
 function validateSession(token) {
   try {
-    if (!token) return false;
-    var cache = CacheService.getScriptCache();
-    var email = cache.get('session_' + token);
-    return !!email;
+    var data = getSessionData(token);
+    if (data) {
+      return { valid: true, name: data.name || 'User', email: data.email || '' };
+    }
+    return { valid: false };
   } catch (e) {
-    return false;
+    return { valid: false };
+  }
+}
+
+/**
+ * Sign out — remove session from both cache and persistent storage
+ */
+function signOut(token) {
+  try {
+    if (!token) return { success: false };
+    var cache = CacheService.getScriptCache();
+    cache.remove('session_' + token);
+    PropertiesService.getScriptProperties().deleteProperty('session_' + token);
+    return { success: true };
+  } catch (e) {
+    Logger.log('signOut error: ' + e);
+    return { success: false };
   }
 }
 

@@ -6,6 +6,84 @@
   var loginEmail = '';
   var isProcessing = false;
 
+  // ========================================
+  // Safe Storage Helper — handles blocked cookies/localStorage in iframes
+  // Modern browsers block third-party storage in cross-origin iframes.
+  // We use sessionStorage as primary (same-origin to Apps Script),
+  // localStorage as secondary, and postMessage to parent as tertiary.
+  // ========================================
+  function safeStorageGet(key) {
+    try {
+      // sessionStorage is same-origin and less likely to be blocked
+      var val = sessionStorage.getItem(key);
+      if (val) return val;
+    } catch(e) {}
+    try {
+      return localStorage.getItem(key);
+    } catch(e) {}
+    return null;
+  }
+
+  function safeStorageSet(key, value) {
+    try { sessionStorage.setItem(key, value); } catch(e) {}
+    try { localStorage.setItem(key, value); } catch(e) {}
+    // Notify parent frame to store token (survives iframe reload)
+    try {
+      if (window.top !== window) {
+        window.top.postMessage({ type: 'uwc_session_store', key: key, value: value }, '*');
+      }
+    } catch(e) {}
+  }
+
+  function safeStorageRemove(key) {
+    try { sessionStorage.removeItem(key); } catch(e) {}
+    try { localStorage.removeItem(key); } catch(e) {}
+    try {
+      if (window.top !== window) {
+        window.top.postMessage({ type: 'uwc_session_remove', key: key }, '*');
+      }
+    } catch(e) {}
+  }
+
+  // ========================================
+  // Auto-restore: check storage for existing session
+  // ========================================
+  (function checkExistingSession() {
+    var savedToken = safeStorageGet('uwc_session_token');
+
+    // Also check URL hash fallback (parent may have injected token)
+    if (!savedToken) {
+      try {
+        var hash = window.location.hash;
+        if (hash && hash.indexOf('token=') !== -1) {
+          savedToken = hash.split('token=')[1].split('&')[0];
+        }
+      } catch(e) {}
+    }
+
+    if (savedToken) {
+      // Validate the token server-side before redirecting
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result && result.valid) {
+            // Session still good — redirect straight to dashboard
+            var url = window.location.href.split('?')[0];
+            window.top.location.href = url + '?page=dashboard&token=' + savedToken;
+          } else {
+            // Session expired — clean up
+            safeStorageRemove('uwc_session_token');
+            safeStorageRemove('uwc_session_name');
+          }
+        })
+        .withFailureHandler(function() {
+          // Server error — let user log in normally
+          safeStorageRemove('uwc_session_token');
+          safeStorageRemove('uwc_session_name');
+        })
+        .validateSession(savedToken);
+    }
+  })();
+
   // Enter key support
   document.addEventListener('DOMContentLoaded', function() {
     var emailInput = document.getElementById('emailInput');
@@ -32,6 +110,15 @@
 
     // Focus email input
     emailInput.focus();
+
+    // Fetch and display app version
+    google.script.run
+      .withSuccessHandler(function(ver) {
+        var el = document.getElementById('appVersion');
+        if (el && ver) el.textContent = 'Version ' + ver;
+      })
+      .withFailureHandler(function() {})
+      .getAppVersion();
   });
 
   // ========================================
@@ -123,14 +210,20 @@
     setLoading('codeBtn', false);
 
     if (result.success) {
+      // Persist session token in all available storage layers
+      if (result.token) {
+        safeStorageSet('uwc_session_token', result.token);
+        safeStorageSet('uwc_session_name', result.name || 'User');
+      }
+
       // Show success screen
       document.getElementById('welcomeName').textContent = result.name || 'User';
       showStep(3);
 
-      // Redirect to dashboard after animation
+      // Redirect to dashboard after brief animation
       setTimeout(function() {
         window.top.location.href = result.dashboardUrl;
-      }, 1800);
+      }, 800);
     } else {
       switch (result.error) {
         case 'INVALID_CODE':

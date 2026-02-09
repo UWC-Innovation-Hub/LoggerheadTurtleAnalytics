@@ -1,8 +1,26 @@
-<script>
   // ========================================
   // UWC Immersive Zone - Analytics Dashboard
-  // Modern Chart.js Configuration
+  // Cloudflare Pages Edition
   // ========================================
+
+  // API helper — replaces google.script.run
+  const API_BASE = '/api';
+
+  async function callAPI(action, params) {
+    var token = window.SESSION_TOKEN || '';
+    var response = await fetch(API_BASE + '/' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: action, params: params || {}, token: token })
+    });
+    if (!response.ok) {
+      throw new Error('API error: ' + response.status);
+    }
+    return response.json();
+  }
+
+  // Apps Script login URL — update this to your deployed Apps Script URL
+  const LOGIN_URL = 'https://script.google.com/macros/s/AKfycbzGU2I7Cyklhmry6FicL51YK0jAiIgCnleTb7A4qhgJm-IdNlN5Nf81Al_jSd803AUn/exec';
 
   // Chart instances
   let timeSeriesChart = null;
@@ -53,7 +71,49 @@
   // ========================================
   // Initialization
   // ========================================
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', async function() {
+    // Read token from URL query parameter
+    var urlParams = new URLSearchParams(window.location.search);
+    window.SESSION_TOKEN = urlParams.get('token') || '';
+
+    // Strip token from URL bar for security
+    if (urlParams.get('token')) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    // Try storage fallback if no token in URL
+    if (!window.SESSION_TOKEN) {
+      try { window.SESSION_TOKEN = sessionStorage.getItem('uwc_session_token') || ''; } catch(e) {}
+    }
+    if (!window.SESSION_TOKEN) {
+      try { window.SESSION_TOKEN = localStorage.getItem('uwc_session_token') || ''; } catch(e) {}
+    }
+
+    if (!window.SESSION_TOKEN) {
+      redirectToLogin();
+      return;
+    }
+
+    // Validate session with backend
+    try {
+      var session = await callAPI('validateSession', { token: window.SESSION_TOKEN });
+      if (!session || !session.valid) {
+        redirectToLogin();
+        return;
+      }
+      window.LOGGED_IN_NAME = session.name || 'User';
+    } catch (e) {
+      redirectToLogin();
+      return;
+    }
+
+    // Persist token in storage
+    try { sessionStorage.setItem('uwc_session_token', window.SESSION_TOKEN); } catch(e) {}
+    try { sessionStorage.setItem('uwc_session_name', window.LOGGED_IN_NAME); } catch(e) {}
+    try { localStorage.setItem('uwc_session_token', window.SESSION_TOKEN); } catch(e) {}
+    try { localStorage.setItem('uwc_session_name', window.LOGGED_IN_NAME); } catch(e) {}
+
+    // Session valid — proceed with dashboard initialization
     bustImageCache();
     setLoggedInName();
     setCurrentDate();
@@ -63,13 +123,12 @@
     fetchInitialDeploymentVersion();
     startSyncTimer();
     // Display app version in footer
-    google.script.run
-      .withSuccessHandler(function(ver) {
+    callAPI('getAppVersion')
+      .then(function(ver) {
         var el = document.getElementById('footerAppVersion');
         if (el && ver) el.textContent = ver;
       })
-      .withFailureHandler(function() {})
-      .getAppVersion();
+      .catch(function() {});
   });
 
   function bustImageCache() {
@@ -111,12 +170,12 @@
   function initializeCharts() {
     // Time Series Chart - Smooth curved lines like reference
     const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
-    
+
     // Create gradient fills
     const gradient1 = timeSeriesCtx.createLinearGradient(0, 0, 0, 250);
     gradient1.addColorStop(0, 'rgba(0, 51, 102, 0.2)');
     gradient1.addColorStop(1, 'rgba(0, 51, 102, 0)');
-    
+
     const gradient2 = timeSeriesCtx.createLinearGradient(0, 0, 0, 250);
     gradient2.addColorStop(0, 'rgba(0, 201, 167, 0.15)');
     gradient2.addColorStop(1, 'rgba(0, 201, 167, 0)');
@@ -192,18 +251,18 @@
         scales: {
           x: {
             grid: { display: false },
-            ticks: { 
+            ticks: {
               font: { size: 11 },
               maxRotation: 0
             }
           },
           y: {
             beginAtZero: true,
-            grid: { 
+            grid: {
               color: 'rgba(0, 0, 0, 0.04)',
               drawBorder: false
             },
-            ticks: { 
+            ticks: {
               font: { size: 11 },
               callback: value => formatNumber(value)
             }
@@ -250,7 +309,7 @@
           r: {
             beginAtZero: true,
             max: 100,
-            ticks: { 
+            ticks: {
               display: false,
               stepSize: 20
             },
@@ -366,7 +425,7 @@
         },
         scales: {
           x: {
-            grid: { 
+            grid: {
               color: 'rgba(0,0,0,0.04)',
               drawBorder: false
             },
@@ -384,13 +443,15 @@
   // ========================================
   // Data Loading
   // ========================================
-  function loadDashboardData(period) {
+  async function loadDashboardData(period) {
     showLoading(true);
-    
-    google.script.run
-      .withSuccessHandler(handleDashboardData)
-      .withFailureHandler(handleError)
-      .fetchAllDashboardData(period);
+
+    try {
+      var data = await callAPI('fetchAllDashboardData', { period: period });
+      handleDashboardData(data);
+    } catch (error) {
+      handleError(error);
+    }
   }
 
   function handleDashboardData(data) {
@@ -402,28 +463,28 @@
       updateMetrics(data.overview.data);
       updateDateRange(data.overview.dateRange);
     }
-    
+
     if (data.timeSeries && data.timeSeries.success) {
       updateTimeSeriesChart(data.timeSeries.data);
       updateActivityChart(data.timeSeries.data);
     }
-    
+
     if (data.trafficSources && data.trafficSources.success) {
       updateTrafficChart(data.trafficSources.data);
     }
-    
+
     if (data.devices && data.devices.success) {
       updateDevicesChart(data.devices.data);
     }
-    
+
     if (data.topPages && data.topPages.success) {
       updateTopPagesTable(data.topPages.data);
     }
-    
+
     if (data.countries && data.countries.success) {
       updateCountriesTable(data.countries.data);
     }
-    
+
     if (data.engagement && data.engagement.success) {
       updatePerformanceChart(data.engagement.data);
     }
@@ -449,10 +510,11 @@
     hidePreloader();
     console.error('Dashboard error:', error);
 
-    // Check if this is a session/auth error — Apps Script may return auth failures
+    // Check if this is a session/auth error
     var errStr = error ? error.toString().toLowerCase() : '';
     if (errStr.indexOf('authorization') !== -1 || errStr.indexOf('permission') !== -1 ||
-        errStr.indexOf('not logged in') !== -1 || errStr.indexOf('invalid session') !== -1) {
+        errStr.indexOf('not logged in') !== -1 || errStr.indexOf('invalid session') !== -1 ||
+        errStr.indexOf('invalid_session') !== -1) {
       // Session likely expired — redirect to login
       redirectToLogin();
       return;
@@ -650,14 +712,14 @@
 
   function updateTopPagesTable(pages) {
     const tbody = document.querySelector('#topPagesTable tbody');
-    
+
     if (pages.length === 0) {
       tbody.innerHTML = '<tr><td colspan="3" class="loading-cell">No data available</td></tr>';
       return;
     }
-    
+
     const maxViews = Math.max(...pages.map(p => p.views));
-    
+
     tbody.innerHTML = pages.slice(0, 8).map(page => `
       <tr>
         <td class="page-title-cell" title="${escapeHtml(page.title)}">${escapeHtml(truncate(page.title, 35))}</td>
@@ -669,14 +731,14 @@
 
   function updateCountriesTable(countries) {
     const tbody = document.querySelector('#countriesTable tbody');
-    
+
     if (countries.length === 0) {
       tbody.innerHTML = '<tr><td colspan="3" class="loading-cell">No data available</td></tr>';
       return;
     }
-    
+
     const total = countries.reduce((sum, c) => sum + c.users, 0);
-    
+
     tbody.innerHTML = countries.slice(0, 8).map(country => {
       const pct = total > 0 ? ((country.users / total) * 100).toFixed(1) : 0;
       return `
@@ -766,7 +828,7 @@
   function formatDuration(seconds) {
     if (!seconds || seconds === 0) return '0s';
     seconds = parseFloat(seconds);
-    
+
     if (seconds < 60) {
       return Math.round(seconds) + 's';
     } else if (seconds < 3600) {
@@ -784,7 +846,7 @@
     if (!dateStr) return '';
     const parts = dateStr.split('-');
     if (parts.length === 3) {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return months[parseInt(parts[1]) - 1] + ' ' + parseInt(parts[2]) + ', ' + parts[0];
     }
@@ -873,16 +935,16 @@
   async function exportToPDF() {
     const btn = document.getElementById('exportPdfBtn');
     const originalHTML = btn.innerHTML;
-    
+
     btn.innerHTML = '<div class="spinner"></div> Generating...';
     btn.disabled = true;
-    
+
     try {
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      
+
       // Header height and footer height
       const headerHeight = 30;
       const footerHeight = 12;
@@ -892,20 +954,15 @@
       // Available height for content (page height minus header, footer, and margins)
       const availableHeight = pageHeight - headerHeight - footerHeight - (contentMargin * 2);
       const contentWidth = pageWidth - (sideMargin * 2);
-      
+
       // Draw Header - white background
       pdf.setFillColor(255, 255, 255);
       pdf.rect(0, 0, pageWidth, headerHeight, 'F');
 
-      // Add header logo centered via server-side base64 fetch
+      // Add header logo centered via API base64 fetch
       var logoYEnd = 12;
       try {
-        var logoBase64 = await new Promise(function(resolve, reject) {
-          google.script.run
-            .withSuccessHandler(resolve)
-            .withFailureHandler(reject)
-            .fetchLogoAsBase64();
-        });
+        var logoBase64 = await callAPI('fetchLogoAsBase64');
         if (logoBase64) {
           var logoH = 10;
           var tempImg = new Image();
@@ -934,10 +991,10 @@
       pdf.setFillColor(10, 26, 92); // --uwc-blue #0a1a5c
       var blueLineY = headerHeight - 1.5;
       pdf.rect(0, blueLineY, pageWidth, 1.5, 'F');
-      
+
       // Capture dashboard content
       const content = document.getElementById('dashboardContent');
-      
+
       // Use higher scale for better quality
       const canvas = await html2canvas(content, {
         scale: 2,
@@ -945,39 +1002,39 @@
         logging: false,
         backgroundColor: '#f5f7fa'
       });
-      
+
       // Calculate scaling to fit content on single page
       const imgAspectRatio = canvas.width / canvas.height;
       let imgWidth = contentWidth;
       let imgHeight = imgWidth / imgAspectRatio;
-      
+
       // If height exceeds available space, scale down to fit
       if (imgHeight > availableHeight) {
         imgHeight = availableHeight;
         imgWidth = imgHeight * imgAspectRatio;
       }
-      
+
       // Center horizontally if width is less than available
       const xOffset = (pageWidth - imgWidth) / 2;
       const yOffset = headerHeight + contentMargin;
-      
+
       // Add the scaled image
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
-      
+
       // Draw Footer
       pdf.setFillColor(0, 34, 68);
       pdf.rect(0, pageHeight - footerHeight, pageWidth, footerHeight, 'F');
-      
+
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(7);
       pdf.text('University of the Western Cape | UWC Immersive Zone | 405 Voortrekker Road, Oostersee | infouih@uwc.ac.za',
                pageWidth / 2, pageHeight - 5, { align: 'center' });
-      
+
       // Save PDF
       const today = new Date().toISOString().split('T')[0];
       pdf.save(`UWC_Analytics_${currentPeriod}_${today}.pdf`);
-      
+
     } catch (error) {
       console.error('PDF export error:', error);
       alert('Error generating PDF. Please try again.');
@@ -990,18 +1047,18 @@
   // ========================================
   // Session Management & Sign Out
   // ========================================
-  function handleSignOut() {
+  async function handleSignOut() {
     var token = window.SESSION_TOKEN || '';
     if (!token) { try { token = sessionStorage.getItem('uwc_session_token') || ''; } catch(e) {} }
     if (!token) { try { token = localStorage.getItem('uwc_session_token') || ''; } catch(e) {} }
     if (token) {
-      google.script.run
-        .withSuccessHandler(function() { redirectToLogin(); })
-        .withFailureHandler(function() { redirectToLogin(); })
-        .signOut(token);
-    } else {
-      redirectToLogin();
+      try {
+        await callAPI('signOut', { token: token });
+      } catch(e) {
+        // Sign out regardless of API success
+      }
     }
+    redirectToLogin();
   }
 
   function redirectToLogin() {
@@ -1010,15 +1067,8 @@
     try { sessionStorage.removeItem('uwc_session_name'); } catch(e) {}
     try { localStorage.removeItem('uwc_session_token'); } catch(e) {}
     try { localStorage.removeItem('uwc_session_name'); } catch(e) {}
-    // Notify parent frame to clear stored tokens
-    try {
-      if (window.top !== window) {
-        window.top.postMessage({ type: 'uwc_session_remove', key: 'uwc_session_token' }, '*');
-        window.top.postMessage({ type: 'uwc_session_remove', key: 'uwc_session_name' }, '*');
-      }
-    } catch(e) {}
-    // Always redirect to the public-facing dashboard URL
-    window.top.location.href = 'https://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/AnalyticsDashboard.html';
+    // Redirect to Apps Script login page
+    window.location.href = LOGIN_URL;
   }
 
   // ========================================
@@ -1063,28 +1113,26 @@
   // Deployment Version Check
   // ========================================
   function fetchInitialDeploymentVersion() {
-    google.script.run
-      .withSuccessHandler(function(version) {
+    callAPI('getDeploymentVersion')
+      .then(function(version) {
         deploymentVersion = version;
       })
-      .withFailureHandler(function() {
+      .catch(function() {
         // Silent fail — version check is non-critical
-      })
-      .getDeploymentVersion();
+      });
   }
 
   function checkDeploymentVersion() {
-    google.script.run
-      .withSuccessHandler(function(version) {
+    callAPI('getDeploymentVersion')
+      .then(function(version) {
         if (deploymentVersion && version && version !== deploymentVersion) {
           showUpdatePopup();
         }
         deploymentVersion = version;
       })
-      .withFailureHandler(function() {
+      .catch(function() {
         // Silent fail
-      })
-      .getDeploymentVersion();
+      });
   }
 
   function showUpdatePopup() {
@@ -1113,4 +1161,3 @@
       });
     }
   });
-</script>

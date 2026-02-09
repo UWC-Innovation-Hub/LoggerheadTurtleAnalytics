@@ -1,0 +1,5 @@
+name = "loggerhead-analytics"
+compatibility_date = "2024-09-23"
+
+[vars]
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGU2I7Cyklhmry6FicL51YK0jAiIgCnleTb7A4qhgJm-IdNlN5Nf81Al_jSd803AUn/exec"

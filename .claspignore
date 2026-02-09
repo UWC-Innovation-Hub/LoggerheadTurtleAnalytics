@@ -1,0 +1,7 @@
+cloudflare/**
+.claude/**
+.git/**
+.gitignore
+nul
+*.backup-*
+BACKUP.md

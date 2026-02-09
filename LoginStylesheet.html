@@ -1,6 +1,7 @@
 <style>
   /* ========================================
      UWC Immersive Zone - Login Page Styles
+     Centered Card Modal on Blue Background
      ======================================== */
 
   *, *::before, *::after {
@@ -12,133 +13,142 @@
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     min-height: 100vh;
-    background: #0a1a5c;
+    background: linear-gradient(135deg, #0a1a5c 0%, #0d2470 40%, #102d8a 100%);
     overflow: hidden;
   }
 
   /* ========================================
-     Login Page Layout — Split Screen
+     Full-page centered layout
      ======================================== */
   .login-page {
     display: flex;
+    align-items: center;
+    justify-content: center;
     min-height: 100vh;
     width: 100%;
-  }
-
-  /* Left Branding Panel */
-  .login-brand {
-    flex: 1;
-    background: linear-gradient(135deg, #0a1a5c 0%, #0d2470 40%, #102d8a 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 60px;
+    padding: 24px;
     position: relative;
-    overflow: hidden;
   }
 
-  .login-brand::before {
+  /* Subtle radial glow decorations on background */
+  .login-page::before {
     content: '';
     position: absolute;
-    top: -30%;
-    right: -20%;
+    top: -15%;
+    right: -10%;
     width: 500px;
     height: 500px;
     background: radial-gradient(circle, rgba(189, 154, 79, 0.08) 0%, transparent 70%);
     border-radius: 50%;
+    pointer-events: none;
   }
 
-  .login-brand::after {
+  .login-page::after {
     content: '';
     position: absolute;
-    bottom: -20%;
+    bottom: -15%;
     left: -10%;
     width: 400px;
     height: 400px;
     background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
     border-radius: 50%;
+    pointer-events: none;
   }
 
-  .login-brand-content {
+  /* ========================================
+     White Card Modal
+     ======================================== */
+  .login-card {
     position: relative;
     z-index: 1;
-    max-width: 420px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 480px;
+    overflow: hidden;
+    animation: cardSlideIn 0.4s ease;
+  }
+
+  @keyframes cardSlideIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ========================================
+     Card Header — Blue banner with logo
+     ======================================== */
+  .login-card-header {
+    background: linear-gradient(135deg, #0a1a5c 0%, #0d2470 100%);
+    padding: 32px 32px 24px;
     text-align: center;
   }
 
   .login-logo {
-    height: 90px;
+    height: 56px;
     width: auto;
-    margin-bottom: 32px;
+    margin-bottom: 14px;
   }
 
-  .login-brand-title {
+  .login-card-title {
     font-family: 'Poppins', sans-serif;
-    font-size: 2rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: #ffffff;
-    margin-bottom: 12px;
-    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
   }
 
-  .login-brand-subtitle {
-    font-size: 0.95rem;
-    color: rgba(255, 255, 255, 0.7);
-    line-height: 1.6;
-    margin-bottom: 40px;
+  .login-card-subtitle {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.5;
+    max-width: 360px;
+    margin: 0 auto;
   }
 
-  .login-brand-features {
+  /* ========================================
+     Gold accent stripe
+     ======================================== */
+  .login-gold-stripe {
+    height: 3px;
+    background: linear-gradient(90deg, #bd9a4f 0%, #d4b96a 50%, #bd9a4f 100%);
+  }
+
+  /* ========================================
+     Feature Icons Row — Horizontal
+     ======================================== */
+  .login-features-row {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-    text-align: left;
+    justify-content: center;
+    gap: 24px;
+    padding: 16px 24px;
+    background: #f8fafc;
+    border-bottom: 1px solid #edf2f7;
   }
 
   .login-feature {
     display: flex;
     align-items: center;
-    gap: 12px;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
+    gap: 6px;
+    font-size: 0.72rem;
     font-weight: 500;
+    color: #64748b;
+    white-space: nowrap;
   }
 
   .login-feature svg {
     color: #bd9a4f;
     flex-shrink: 0;
+    width: 15px;
+    height: 15px;
   }
 
-  .login-brand-footer {
-    position: absolute;
-    bottom: 32px;
-    left: 0;
-    right: 0;
-    text-align: center;
-    z-index: 1;
-  }
-
-  .login-brand-footer p {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.4);
-    line-height: 1.5;
-  }
-
-  /* Right Login Panel */
-  .login-panel {
-    flex: 1;
-    background: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 60px;
-    max-width: 560px;
-  }
-
+  /* ========================================
+     Form Container
+     ======================================== */
   .login-form-container {
-    width: 100%;
-    max-width: 380px;
+    padding: 28px 32px 24px;
   }
 
   /* Steps */
@@ -157,19 +167,19 @@
   }
 
   .login-step-header {
-    margin-bottom: 32px;
+    margin-bottom: 24px;
   }
 
   .login-step-header h2 {
     font-family: 'Poppins', sans-serif;
-    font-size: 1.75rem;
+    font-size: 1.35rem;
     font-weight: 700;
     color: #0a1a5c;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .login-step-header p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #718096;
     line-height: 1.5;
   }
@@ -180,17 +190,17 @@
 
   /* Input */
   .login-input-group {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
   }
 
   .login-input-group label {
     display: block;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #4a5568;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .login-input-wrapper {
@@ -209,7 +219,7 @@
 
   .login-input-wrapper input {
     width: 100%;
-    padding: 14px 14px 14px 44px;
+    padding: 13px 14px 13px 44px;
     font-family: 'Inter', sans-serif;
     font-size: 1rem;
     color: #1a202c;
@@ -238,7 +248,7 @@
     border-radius: 8px;
     color: #c53030;
     font-size: 0.85rem;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   /* Button */
@@ -248,7 +258,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 14px 24px;
+    padding: 13px 24px;
     background: #bd9a4f;
     color: #ffffff;
     border: none;
@@ -295,14 +305,14 @@
     display: flex;
     justify-content: center;
     gap: 24px;
-    margin-top: 20px;
+    margin-top: 18px;
   }
 
   .login-link-btn {
     background: none;
     border: none;
     color: #718096;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     cursor: pointer;
     padding: 4px 0;
     transition: color 0.2s;
@@ -315,12 +325,13 @@
   /* Success */
   .login-success {
     text-align: center;
+    padding: 12px 0;
   }
 
   .login-success-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 24px;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 20px;
     background: rgba(0, 201, 167, 0.1);
     border-radius: 50%;
     display: flex;
@@ -331,20 +342,20 @@
 
   .login-success h2 {
     font-family: 'Poppins', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 700;
     color: #0a1a5c;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .login-success p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #718096;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
   }
 
   .login-progress-bar {
-    width: 200px;
+    width: 180px;
     height: 4px;
     background: #e2e8f0;
     border-radius: 2px;
@@ -366,57 +377,87 @@
   }
 
   /* ========================================
-     Responsive
+     Card Footer
      ======================================== */
-  @media (max-width: 900px) {
-    .login-page {
-      flex-direction: column;
-    }
-
-    .login-brand {
-      flex: none;
-      padding: 40px 24px;
-      min-height: auto;
-    }
-
-    .login-brand-features {
-      display: none;
-    }
-
-    .login-brand-footer {
-      display: none;
-    }
-
-    .login-brand-subtitle {
-      margin-bottom: 0;
-    }
-
-    .login-panel {
-      flex: 1;
-      max-width: 100%;
-      padding: 40px 24px;
-    }
+  .login-card-footer {
+    padding: 14px 24px;
+    text-align: center;
+    border-top: 1px solid #edf2f7;
+    background: #f8fafc;
   }
 
-  @media (max-width: 600px) {
-    .login-brand {
-      padding: 32px 20px;
+  .login-card-footer p {
+    font-size: 0.7rem;
+    color: #a0aec0;
+    letter-spacing: 0.3px;
+  }
+
+  .login-version {
+    margin-top: 4px;
+    font-size: 0.65rem;
+    color: #c0c8d4;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+
+  /* ========================================
+     Responsive
+     ======================================== */
+  @media (max-width: 540px) {
+    .login-page {
+      padding: 16px;
+    }
+
+    .login-card {
+      border-radius: 12px;
+    }
+
+    .login-card-header {
+      padding: 24px 20px 18px;
     }
 
     .login-logo {
-      height: 60px;
+      height: 44px;
+      margin-bottom: 10px;
     }
 
-    .login-brand-title {
-      font-size: 1.5rem;
+    .login-card-title {
+      font-size: 1.2rem;
     }
 
-    .login-panel {
-      padding: 32px 20px;
+    .login-card-subtitle {
+      font-size: 0.75rem;
+    }
+
+    .login-features-row {
+      gap: 14px;
+      padding: 12px 16px;
+    }
+
+    .login-feature {
+      font-size: 0.65rem;
+      gap: 4px;
+    }
+
+    .login-feature svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .login-form-container {
+      padding: 22px 20px 18px;
     }
 
     .login-step-header h2 {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .login-features-row {
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      justify-content: center;
     }
   }
 </style>

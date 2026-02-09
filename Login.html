@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UWC Immersive Zone - Login</title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="https://innovationhub.uwc.ac.za/jigspace/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="https://innovationhub.uwc.ac.za/jigspace/favicon.png">
+  <link rel="apple-touch-icon" href="https://innovationhub.uwc.ac.za/jigspace/favicon.png">
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,48 +18,48 @@
   <?!= include('LoginStylesheet'); ?>
 </head>
 <body>
-  <!-- Login Page -->
+  <!-- Login Page — Full blue background with centered card -->
   <div class="login-page">
-    <!-- Left Branding Panel -->
-    <div class="login-brand">
-      <div class="login-brand-content">
+    <!-- White Card Modal -->
+    <div class="login-card">
+      <!-- Card Header — Logo & Title -->
+      <div class="login-card-header">
         <img src="https://innovationhub.uwc.ac.za/img/UIH_Logo_FA_white.png" alt="UWC Immersive Zone" class="login-logo">
-        <h1 class="login-brand-title">Analytics Dashboard</h1>
-        <p class="login-brand-subtitle">Track engagement and performance metrics for UWC Immersive Zone educational experiences.</p>
-        <div class="login-brand-features">
-          <div class="login-feature">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-            </svg>
-            <span>Real-time Analytics</span>
-          </div>
-          <div class="login-feature">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            <span>User Engagement</span>
-          </div>
-          <div class="login-feature">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            <span>PDF Reports</span>
-          </div>
+        <h1 class="login-card-title">Analytics Dashboard</h1>
+        <p class="login-card-subtitle">Track engagement and performance metrics for UWC Immersive Zone educational experiences.</p>
+      </div>
+
+      <!-- Gold accent stripe -->
+      <div class="login-gold-stripe"></div>
+
+      <!-- Feature Icons Row -->
+      <div class="login-features-row">
+        <div class="login-feature">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          <span>Real-time Analytics</span>
+        </div>
+        <div class="login-feature">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>User Engagement</span>
+        </div>
+        <div class="login-feature">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>PDF Reports</span>
         </div>
       </div>
-      <div class="login-brand-footer">
-        <p>University of the Western Cape</p>
-        <p>UWC Immersive Zone</p>
-      </div>
-    </div>
 
-    <!-- Right Login Panel -->
-    <div class="login-panel">
+      <!-- Login Form Area -->
       <div class="login-form-container">
         <!-- Step 1: Email -->
         <div id="loginStep1" class="login-step active">
@@ -131,6 +136,12 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Card Footer -->
+      <div class="login-card-footer">
+        <p>University of the Western Cape &middot; UWC Immersive Zone</p>
+        <p class="login-version" id="appVersion"></p>
       </div>
     </div>
   </div>
