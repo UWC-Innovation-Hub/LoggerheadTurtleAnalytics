@@ -726,6 +726,48 @@ function fetchRealtimeUsers() {
 }
 
 /**
+ * Fetch page-level flow data for the User Journey visualization.
+ * Returns pagePath + pageViews + users + avgDuration, which the frontend
+ * maps onto the known site nodes (Google Sites → InnovationHub → JigSpace).
+ */
+function fetchPageFlow(period) {
+  try {
+    var range = getDateRange(period);
+
+    var requestBody = {
+      dateRanges: [{ startDate: range.startDate, endDate: range.endDate }],
+      dimensions: [{ name: 'pagePath' }],
+      metrics: [
+        { name: 'screenPageViews' },
+        { name: 'totalUsers' },
+        { name: 'averageSessionDuration' }
+      ],
+      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+      limit: 30
+    };
+
+    var result = makeGA4Request(requestBody);
+
+    if (result.success && result.data.rows && result.data.rows.length > 0) {
+      var pages = result.data.rows.map(function(row) {
+        return {
+          path: row.dimensionValues[0].value || '/',
+          views: parseInt(row.metricValues[0].value) || 0,
+          users: parseInt(row.metricValues[1].value) || 0,
+          avgDuration: parseFloat(row.metricValues[2].value) || 0
+        };
+      });
+      return { success: true, data: pages };
+    }
+
+    return { success: true, data: [] };
+  } catch (error) {
+    Logger.log('Error fetching page flow: ' + error.toString());
+    return { success: false, error: error.toString() };
+  }
+}
+
+/**
  * Fetch all dashboard data at once
  */
 function fetchAllDashboardData(period) {
@@ -745,7 +787,8 @@ function fetchAllDashboardData(period) {
     engagement: safeFetch(function() { return fetchEngagementMetrics(period); }),
     acquisition: safeFetch(function() { return fetchUserAcquisition(period); }),
     events: safeFetch(function() { return fetchEventData(period); }),
-    realtime: safeFetch(function() { return fetchRealtimeUsers(); })
+    realtime: safeFetch(function() { return fetchRealtimeUsers(); }),
+    pageFlow: safeFetch(function() { return fetchPageFlow(period); })
   };
 }
 

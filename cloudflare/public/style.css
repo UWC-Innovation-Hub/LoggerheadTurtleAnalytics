@@ -1651,6 +1651,203 @@
   }
 
   /* ========================================
+     User Journey Flow
+     ======================================== */
+  .journey-section {
+    margin-bottom: var(--space-xl);
+  }
+
+  .journey-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-light);
+  }
+
+  .journey-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: var(--space-lg) 0;
+    overflow-x: auto;
+  }
+
+  .journey-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    background: #f8fafc;
+    border: 2px solid var(--border-light);
+    min-width: 170px;
+    max-width: 200px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+  }
+
+  .journey-node:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .journey-node-primary {
+    background: rgba(0, 51, 102, 0.04);
+    border-color: var(--uwc-blue);
+    border-width: 2px;
+  }
+
+  .journey-node-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-sm);
+  }
+
+  .journey-icon-gsites {
+    background: rgba(66, 133, 244, 0.12);
+    color: #4285F4;
+  }
+
+  .journey-icon-ihub {
+    background: rgba(0, 51, 102, 0.12);
+    color: var(--uwc-blue);
+  }
+
+  .journey-icon-jig {
+    background: rgba(0, 201, 167, 0.12);
+    color: var(--accent-teal);
+  }
+
+  .journey-node-label {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--uwc-blue);
+    line-height: 1.2;
+  }
+
+  .journey-node-sublabel {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-sm);
+  }
+
+  .journey-node-stats {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .journey-stat-views,
+  .journey-stat-users {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    color: var(--uwc-blue);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .journey-stat-sep {
+    margin: 0 3px;
+    color: var(--text-muted);
+  }
+
+  .journey-node-time {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* Journey arrows */
+  .journey-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 var(--space-sm);
+    min-width: 70px;
+  }
+
+  .journey-arrow-line {
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--uwc-gold) 0%, var(--accent-teal) 100%);
+    border-radius: 2px;
+    position: relative;
+  }
+
+  .journey-arrow-label {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--uwc-gold);
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+
+  .journey-arrow-head {
+    color: var(--accent-teal);
+    margin-top: -14px;
+    margin-left: auto;
+  }
+
+  /* Conversion funnel */
+  .journey-funnel {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .funnel-step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    position: relative;
+  }
+
+  .funnel-bar {
+    height: 24px;
+    background: var(--uwc-blue);
+    border-radius: 4px;
+    min-width: 30px;
+    transition: width 0.8s ease;
+  }
+
+  .funnel-bar-mid {
+    background: var(--uwc-gold);
+  }
+
+  .funnel-bar-end {
+    background: var(--accent-teal);
+  }
+
+  .funnel-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    min-width: 140px;
+  }
+
+  .funnel-value {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--uwc-blue);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========================================
      Responsive
      ======================================== */
   @media (max-width: 1200px) {
@@ -1717,6 +1914,21 @@
   }
 
   @media (max-width: 768px) {
+    .journey-flow {
+      flex-direction: column;
+    }
+
+    .journey-arrow {
+      transform: rotate(90deg);
+      padding: var(--space-xs) 0;
+      min-width: unset;
+    }
+
+    .journey-node {
+      min-width: 200px;
+      max-width: 260px;
+    }
+
     .hero-controls {
       flex-direction: column;
       align-items: stretch;

@@ -536,6 +536,12 @@
       console.warn('[Dashboard] Realtime failed:', data.realtime);
     }
 
+    if (data.pageFlow && data.pageFlow.success) {
+      updateJourneyFlow(data.pageFlow.data, data.events ? data.events.data : []);
+    } else {
+      console.warn('[Dashboard] PageFlow failed:', data.pageFlow);
+    }
+
     // Update "Last Updated" timestamp
     updateLastUpdated();
   }
@@ -904,16 +910,10 @@
   // GA4 Outbound Click Tracking
   // ========================================
   function trackOutboundClick(eventName, source, destination, event) {
-    if (typeof gtag === 'function') {
-      // Use beacon transport so the hit sends even when navigating away
-      gtag('event', eventName, {
-        event_category: 'outbound_click',
-        event_label: destination,
-        click_source: source,
-        source_page: 'AnalyticsDashboard',
-        transport_type: 'beacon'
-      });
-    }
+    // GA4 tag removed from dashboard to stop self-tracking.
+    // Outbound clicks are now tracked on the destination pages themselves.
+    // This function is kept as a no-op so onclick handlers don't throw errors.
+    console.log('[Dashboard] Outbound click:', eventName, source, destination);
   }
 
   // ========================================
@@ -1180,6 +1180,119 @@
     }
     var overlay = document.getElementById('updatePopupOverlay');
     if (overlay) overlay.classList.add('visible');
+  }
+
+  // ========================================
+  // User Journey Flow Visualization
+  // ========================================
+  function updateJourneyFlow(pages, events) {
+    // Classify pages into 3 site buckets
+    var gsViews = 0, gsUsers = 0, gsDuration = 0, gsCount = 0;
+    var ihViews = 0, ihUsers = 0, ihDuration = 0, ihCount = 0;
+    var ttoViews = 0; // track TTO separately so we can exclude it
+
+    if (pages && pages.length > 0) {
+      pages.forEach(function(p) {
+        var path = (p.path || '').toLowerCase();
+
+        // Google Sites pages — root "/" plus any idealoceanhome or uwc.ac.za path
+        // BUT exclude dashboard self-tracking (just "/" alone on Cloudflare domain)
+        if (path.indexOf('/uwc.ac.za/idealoceanhome') !== -1 ||
+            path.indexOf('/interactive-loggerhead') !== -1) {
+          gsViews += p.views;
+          gsUsers += p.users;
+          gsDuration += p.avgDuration * p.views;
+          gsCount += p.views;
+        }
+        // InnovationHub project page
+        else if (path.indexOf('/jigspace/loggerheadturtle') !== -1 ||
+                 path.indexOf('/jigspace/loggerhead') !== -1) {
+          ihViews += p.views;
+          ihUsers += p.users;
+          ihDuration += p.avgDuration * p.views;
+          ihCount += p.views;
+        }
+        // TTO pages (excluded from journey but tracked for info)
+        else if (path.indexOf('/uwc-tto') !== -1 || path.indexOf('/tto') !== -1) {
+          ttoViews += p.views;
+        }
+        // Root "/" that is the Google Sites homepage
+        else if (path === '/') {
+          gsViews += p.views;
+          gsUsers += p.users;
+          gsDuration += p.avgDuration * p.views;
+          gsCount += p.views;
+        }
+      });
+    }
+
+    // JigSpace clicks — from the open_interactive_model custom event
+    var jigClicks = 0, jigUsers = 0;
+    if (events && events.length > 0) {
+      events.forEach(function(ev) {
+        if (ev.name === 'open_interactive_model') {
+          jigClicks = ev.count;
+          jigUsers = ev.users;
+        }
+      });
+    }
+
+    // Calculate average durations
+    var gsAvgDuration = gsCount > 0 ? gsDuration / gsCount : 0;
+    var ihAvgDuration = ihCount > 0 ? ihDuration / ihCount : 0;
+
+    // Update node stats
+    setText('jnGSViews', formatNumber(gsViews));
+    setText('jnGSUsers', formatNumber(gsUsers));
+    setText('jnGSTime', gsAvgDuration > 0 ? 'avg ' + formatDuration(gsAvgDuration) : '—');
+
+    setText('jnIHViews', formatNumber(ihViews));
+    setText('jnIHUsers', formatNumber(ihUsers));
+    setText('jnIHTime', ihAvgDuration > 0 ? 'avg ' + formatDuration(ihAvgDuration) : '—');
+
+    setText('jnJigViews', formatNumber(jigClicks));
+    setText('jnJigUsers', formatNumber(jigUsers));
+    setText('jnJigTime', jigClicks > 0 ? 'via button click' : '—');
+
+    // Calculate conversion arrows
+    var totalEntry = gsViews + ihViews; // total site entry
+    if (totalEntry > 0) {
+      var gsToIhPct = ihViews > 0 && gsViews > 0
+        ? Math.round((ihViews / (gsViews + ihViews)) * 100)
+        : (ihViews > 0 ? 100 : 0);
+      setText('jaGStoIH', gsToIhPct + '%');
+    } else {
+      setText('jaGStoIH', '—');
+    }
+
+    if (ihViews > 0) {
+      var ihToJigPct = jigClicks > 0
+        ? Math.min(Math.round((jigClicks / ihViews) * 100), 100)
+        : 0;
+      setText('jaIHtoJig', ihToJigPct + '%');
+    } else {
+      setText('jaIHtoJig', '—');
+    }
+
+    // Update funnel bars
+    var maxFunnel = Math.max(gsViews, ihViews, jigClicks, 1);
+    setStyle('funnelBar1', 'width', Math.max((gsViews / maxFunnel) * 100, 5) + '%');
+    setStyle('funnelBar2', 'width', Math.max((ihViews / maxFunnel) * 100, 5) + '%');
+    setStyle('funnelBar3', 'width', Math.max((jigClicks / maxFunnel) * 100, 5) + '%');
+
+    setText('funnelVal1', formatNumber(gsViews) + ' views');
+    setText('funnelVal2', formatNumber(ihViews) + ' views');
+    setText('funnelVal3', formatNumber(jigClicks) + ' clicks');
+  }
+
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  function setStyle(id, prop, val) {
+    var el = document.getElementById(id);
+    if (el) el.style[prop] = val;
   }
 
   // Update popup event listeners
