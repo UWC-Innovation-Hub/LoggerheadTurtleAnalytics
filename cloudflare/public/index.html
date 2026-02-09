@@ -21,7 +21,10 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-0Z287Y6Y1G');
+    gtag('config', 'G-0Z287Y6Y1G', {
+      link_attribution: true,
+      send_page_view: true
+    });
   </script>
 
   <!-- Chart.js -->
@@ -163,11 +166,17 @@
 
   <!-- Main Content -->
   <main class="main-content" id="dashboardContent">
+    <!-- Section: Key Numbers -->
+    <div class="section-header">
+      <h2 class="section-title">Key Numbers</h2>
+      <p class="section-subtitle">A quick summary of your most important metrics for the selected period.</p>
+    </div>
+
     <!-- Metric Cards Row -->
     <section class="metrics-section">
       <div class="metric-card">
         <div class="metric-info">
-          <span class="metric-label">Total Users</span>
+          <span class="metric-label" title="Number of unique visitors to the project site">Total Users</span>
           <span class="metric-value" id="totalUsers">-</span>
           <span class="metric-change neutral" id="changeUsers">
             <span class="change-icon"></span>
@@ -192,7 +201,7 @@
 
       <div class="metric-card">
         <div class="metric-info">
-          <span class="metric-label">Sessions</span>
+          <span class="metric-label" title="Total number of visits (one user can have multiple sessions)">Sessions</span>
           <span class="metric-value" id="sessions">-</span>
           <span class="metric-change neutral" id="changeSessions">
             <span class="change-icon"></span>
@@ -216,7 +225,7 @@
 
       <div class="metric-card">
         <div class="metric-info">
-          <span class="metric-label">Page Views</span>
+          <span class="metric-label" title="Total pages viewed across all visits">Page Views</span>
           <span class="metric-value" id="pageViews">-</span>
           <span class="metric-change neutral" id="changePageViews">
             <span class="change-icon"></span>
@@ -239,7 +248,7 @@
 
       <div class="metric-card">
         <div class="metric-info">
-          <span class="metric-label">Avg Duration</span>
+          <span class="metric-label" title="Average time a visitor spends on the site per session">Avg Duration</span>
           <span class="metric-value" id="avgDuration">-</span>
           <span class="metric-change neutral" id="changeDuration">
             <span class="change-icon"></span>
@@ -260,6 +269,12 @@
         </div>
       </div>
     </section>
+
+    <!-- Section: Trends -->
+    <div class="section-header">
+      <h2 class="section-title">Trends & Performance</h2>
+      <p class="section-subtitle">How engagement is changing over time and how your content performs.</p>
+    </div>
 
     <!-- Charts Row 1: Statistics -->
     <section class="charts-section">
@@ -373,6 +388,12 @@
       </div>
     </section>
 
+    <!-- Section: Audience -->
+    <div class="section-header">
+      <h2 class="section-title">Audience Insights</h2>
+      <p class="section-subtitle">Who your visitors are, where they come from, and what devices they use.</p>
+    </div>
+
     <!-- Charts Row 2: Activity & Breakdown -->
     <section class="charts-section">
       <div class="chart-card chart-activity">
@@ -437,6 +458,12 @@
         </div>
       </div>
     </section>
+
+    <!-- Section: Detailed Data -->
+    <div class="section-header">
+      <h2 class="section-title">Detailed Data</h2>
+      <p class="section-subtitle">Drill down into which pages, events, and countries drive the most engagement.</p>
+    </div>
 
     <!-- Tables Section -->
     <section class="tables-section tables-section-3col">

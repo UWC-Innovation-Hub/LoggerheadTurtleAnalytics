@@ -446,11 +446,23 @@
   async function loadDashboardData(period) {
     showLoading(true);
 
+    // Fade out content during load to prevent visual jump
+    var content = document.getElementById('dashboardContent');
+    if (content) {
+      content.style.opacity = '0.5';
+      content.style.transition = 'opacity 0.2s ease';
+    }
+
     try {
       var data = await callAPI('fetchAllDashboardData', { period: period });
       handleDashboardData(data);
     } catch (error) {
       handleError(error);
+    } finally {
+      // Fade back in
+      if (content) {
+        content.style.opacity = '1';
+      }
     }
   }
 
@@ -459,46 +471,69 @@
     hidePreloader();
     resetSyncCountdown();
 
+    // Log API response for debugging data issues
+    console.log('[Dashboard] API response received:', Object.keys(data));
+
     if (data.overview && data.overview.success) {
       updateMetrics(data.overview.data);
       updateDateRange(data.overview.dateRange);
+    } else {
+      console.warn('[Dashboard] Overview failed:', data.overview);
     }
 
     if (data.timeSeries && data.timeSeries.success) {
       updateTimeSeriesChart(data.timeSeries.data);
       updateActivityChart(data.timeSeries.data);
+    } else {
+      console.warn('[Dashboard] TimeSeries failed:', data.timeSeries);
     }
 
     if (data.trafficSources && data.trafficSources.success) {
       updateTrafficChart(data.trafficSources.data);
+    } else {
+      console.warn('[Dashboard] TrafficSources failed:', data.trafficSources);
     }
 
     if (data.devices && data.devices.success) {
       updateDevicesChart(data.devices.data);
+    } else {
+      console.warn('[Dashboard] Devices failed:', data.devices);
     }
 
     if (data.topPages && data.topPages.success) {
       updateTopPagesTable(data.topPages.data);
+    } else {
+      console.warn('[Dashboard] TopPages failed:', data.topPages);
     }
 
     if (data.countries && data.countries.success) {
       updateCountriesTable(data.countries.data);
+    } else {
+      console.warn('[Dashboard] Countries failed:', data.countries);
     }
 
     if (data.engagement && data.engagement.success) {
       updatePerformanceChart(data.engagement.data);
+    } else {
+      console.warn('[Dashboard] Engagement failed:', data.engagement);
     }
 
     if (data.acquisition && data.acquisition.success) {
       updateAcquisitionCard(data.acquisition.data);
+    } else {
+      console.warn('[Dashboard] Acquisition failed:', data.acquisition);
     }
 
     if (data.events && data.events.success) {
       updateEventsTable(data.events.data);
+    } else {
+      console.warn('[Dashboard] Events failed:', data.events);
     }
 
     if (data.realtime) {
       updateRealtimeBadge(data.realtime);
+    } else {
+      console.warn('[Dashboard] Realtime failed:', data.realtime);
     }
 
     // Update "Last Updated" timestamp
@@ -868,13 +903,15 @@
   // ========================================
   // GA4 Outbound Click Tracking
   // ========================================
-  function trackOutboundClick(eventName, source, destination) {
+  function trackOutboundClick(eventName, source, destination, event) {
     if (typeof gtag === 'function') {
+      // Use beacon transport so the hit sends even when navigating away
       gtag('event', eventName, {
         event_category: 'outbound_click',
         event_label: destination,
         click_source: source,
-        source_page: 'AnalyticsDashboard'
+        source_page: 'AnalyticsDashboard',
+        transport_type: 'beacon'
       });
     }
   }
