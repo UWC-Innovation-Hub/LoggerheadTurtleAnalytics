@@ -1037,12 +1037,22 @@
     border-radius: var(--radius-sm);
   }
 
-  /* Activity Card */
+  /* Activity Card — clamp total height */
+  .chart-activity {
+    max-height: 320px;
+    overflow: hidden;
+  }
+
+  .chart-devices {
+    max-height: 280px;
+    overflow: hidden;
+  }
+
   .activity-stats {
     display: flex;
     justify-content: space-around;
-    margin-bottom: var(--space-lg);
-    padding-bottom: var(--space-lg);
+    margin-bottom: var(--space-sm);
+    padding-bottom: var(--space-sm);
     border-bottom: 1px solid var(--border-light);
   }
 
