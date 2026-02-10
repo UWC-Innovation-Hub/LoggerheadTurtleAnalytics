@@ -768,6 +768,55 @@ function fetchPageFlow(period) {
 }
 
 /**
+ * Fetch bounce rate time series for sparkline trend
+ */
+function fetchBounceTimeSeries(period) {
+  try {
+    var range = getDateRange(period);
+
+    var dimension = 'date';
+    if (period === 'YEARLY') dimension = 'yearMonth';
+    else if (period === 'DAU') dimension = 'hour';
+
+    var requestBody = {
+      dateRanges: [{ startDate: range.startDate, endDate: range.endDate }],
+      dimensions: [{ name: dimension }],
+      metrics: [{ name: 'bounceRate' }],
+      orderBys: [{ dimension: { dimensionName: dimension } }]
+    };
+
+    var result = makeGA4Request(requestBody);
+
+    if (result.success && result.data.rows && result.data.rows.length > 0) {
+      var labels = [];
+      var bounceRates = [];
+
+      result.data.rows.forEach(function(row) {
+        var label = row.dimensionValues[0].value;
+        if (dimension === 'date' && label.length === 8) {
+          label = label.substring(4,6) + '/' + label.substring(6,8);
+        } else if (dimension === 'yearMonth' && label.length === 6) {
+          var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          var monthNum = parseInt(label.substring(4,6)) - 1;
+          label = months[monthNum];
+        } else if (dimension === 'hour') {
+          label = label + ':00';
+        }
+        labels.push(label);
+        bounceRates.push(parseFloat((parseFloat(row.metricValues[0].value) * 100).toFixed(1)));
+      });
+
+      return { success: true, data: { labels: labels, bounceRates: bounceRates } };
+    }
+
+    return { success: true, data: { labels: [], bounceRates: [] } };
+  } catch (error) {
+    Logger.log('Error fetching bounce time series: ' + error.toString());
+    return { success: false, error: error.toString() };
+  }
+}
+
+/**
  * Fetch all dashboard data at once
  */
 function fetchAllDashboardData(period) {
@@ -788,7 +837,8 @@ function fetchAllDashboardData(period) {
     acquisition: safeFetch(function() { return fetchUserAcquisition(period); }),
     events: safeFetch(function() { return fetchEventData(period); }),
     realtime: safeFetch(function() { return fetchRealtimeUsers(); }),
-    pageFlow: safeFetch(function() { return fetchPageFlow(period); })
+    pageFlow: safeFetch(function() { return fetchPageFlow(period); }),
+    bounceTimeSeries: safeFetch(function() { return fetchBounceTimeSeries(period); })
   };
 }
 

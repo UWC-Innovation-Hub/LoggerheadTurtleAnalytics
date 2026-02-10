@@ -262,85 +262,13 @@
       </div>
     </section>
 
-    <!-- Section: Trends -->
+    <!-- Section: User Journey (full width, own row) -->
     <div class="section-header">
-      <h2 class="section-title">Trends</h2>
-      <p class="section-subtitle">How engagement is changing over time.</p>
+      <h2 class="section-title">User Journey</h2>
+      <p class="section-subtitle">How visitors move between your sites &mdash; from Google Sites to the project page to the Interactive Loggerhead Turtle JigSpace Solution.</p>
     </div>
 
-    <!-- Charts Row 1: Statistics (full width) -->
-    <section class="charts-section charts-section-single">
-      <div class="chart-card chart-wide">
-        <div class="chart-header">
-          <h3>Statistics</h3>
-          <div class="chart-legend">
-            <span class="legend-item">
-              <span class="legend-dot" style="background: #003366;"></span>
-              Users
-            </span>
-            <span class="legend-item">
-              <span class="legend-dot" style="background: #00C9A7;"></span>
-              Sessions
-            </span>
-            <span class="legend-item">
-              <span class="legend-dot" style="background: #bd9a4f;"></span>
-              Page Views
-            </span>
-          </div>
-        </div>
-        <div class="chart-body">
-          <canvas id="timeSeriesChart"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <!-- Section: Audience & Journey -->
-    <div class="section-header">
-      <h2 class="section-title">Audience & User Journey</h2>
-      <p class="section-subtitle">Who your visitors are, how they move between your sites &mdash; from Google Sites to the project page to the Interactive Loggerhead Turtle JigSpace Solution.</p>
-    </div>
-
-    <!-- Charts Row 2: Activity, Journey, Devices -->
-    <section class="charts-section charts-section-audience">
-      <div class="chart-card chart-activity">
-        <div class="chart-header">
-          <h3>Activity</h3>
-          <span class="chart-period">Last 3 days</span>
-        </div>
-        <div class="activity-stats">
-          <div class="activity-stat">
-            <span class="activity-value" id="newUsersVal">-</span>
-            <span class="activity-change down">
-              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </span>
-            <span class="activity-label">New Users</span>
-          </div>
-          <div class="activity-stat">
-            <span class="activity-value" id="engagementVal">-</span>
-            <span class="activity-change up">
-              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <polyline points="18 15 12 9 6 15"></polyline>
-              </svg>
-            </span>
-            <span class="activity-label">Engagement</span>
-          </div>
-          <div class="activity-stat">
-            <span class="activity-value" id="bounceVal">-</span>
-            <span class="activity-change down">
-              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </span>
-            <span class="activity-label">Bounce Rate</span>
-          </div>
-        </div>
-        <div class="activity-chart">
-          <canvas id="activityChart"></canvas>
-        </div>
-      </div>
-
+    <section class="charts-section charts-section-journey-full">
       <div class="chart-card chart-journey-inline">
         <div class="chart-header">
           <h3>User Journey</h3>
@@ -425,6 +353,90 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <!-- Section: Trends -->
+    <div class="section-header">
+      <h2 class="section-title">Trends</h2>
+      <p class="section-subtitle">How engagement is changing over time.</p>
+    </div>
+
+    <!-- Charts Row 1: Statistics (full width) -->
+    <section class="charts-section charts-section-single">
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <h3>Statistics</h3>
+          <div class="chart-legend">
+            <span class="legend-item">
+              <span class="legend-dot" style="background: #003366;"></span>
+              Users
+            </span>
+            <span class="legend-item">
+              <span class="legend-dot" style="background: #00C9A7;"></span>
+              Sessions
+            </span>
+            <span class="legend-item">
+              <span class="legend-dot" style="background: #bd9a4f;"></span>
+              Page Views
+            </span>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas id="timeSeriesChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Audience -->
+    <div class="section-header">
+      <h2 class="section-title">Audience</h2>
+      <p class="section-subtitle">Who your visitors are and how they engage with your content.</p>
+    </div>
+
+    <!-- Charts Row 2: Activity + Devices -->
+    <section class="charts-section charts-section-activity-devices">
+      <div class="chart-card chart-activity">
+        <div class="chart-header">
+          <h3>Activity</h3>
+          <span class="chart-period">Last 3 days</span>
+        </div>
+        <div class="activity-stats">
+          <div class="activity-stat">
+            <span class="activity-value" id="newUsersVal">-</span>
+            <span class="activity-change down">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <span class="activity-label">New Users</span>
+          </div>
+          <div class="activity-stat">
+            <span class="activity-value" id="engagementVal">-</span>
+            <span class="activity-change up">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="18 15 12 9 6 15"></polyline>
+              </svg>
+            </span>
+            <span class="activity-label">Engagement</span>
+          </div>
+          <div class="activity-stat">
+            <span class="activity-value" id="bounceVal">-</span>
+            <span class="activity-change down">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <span class="activity-label">Bounce Rate</span>
+          </div>
+        </div>
+        <div class="activity-chart">
+          <canvas id="activityChart"></canvas>
+        </div>
+        <div class="bounce-trend" id="bounceTrend">
+          <span class="bounce-trend-label">Bounce Rate Trend</span>
+          <canvas id="bounceSparkline" height="32"></canvas>
+        </div>
+      </div>
 
       <div class="chart-card chart-devices">
         <div class="chart-header">
@@ -442,7 +454,7 @@
       <p class="section-subtitle">Drill down into which pages, events, and countries drive the most engagement.</p>
     </div>
 
-    <!-- Tables Section: Top Pages & Countries combined + GA4 Events -->
+    <!-- Tables Row 1: Top Pages & Countries + GA4 Events -->
     <section class="tables-section tables-section-2col">
       <div class="table-card table-card-combined">
         <div class="table-header">
@@ -500,6 +512,42 @@
               <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tables Row 2: Traffic Sources + Geographic Map -->
+    <section class="tables-section tables-section-2col">
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Traffic Sources</h3>
+        </div>
+        <div class="table-body">
+          <table id="trafficSourcesTable">
+            <thead>
+              <tr>
+                <th>Channel</th>
+                <th>Sessions</th>
+                <th>Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="chart-card chart-geo-map">
+        <div class="chart-header">
+          <h3>Visitor Geography</h3>
+          <span class="chart-period" id="geoTotalCountries">—</span>
+        </div>
+        <div class="geo-map-container" id="geoMapContainer">
+          <svg id="geoMapSvg" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet" class="geo-map-svg">
+            <!-- Simplified world map paths — major regions -->
+          </svg>
+          <div class="geo-legend" id="geoLegend"></div>
         </div>
       </div>
     </section>
