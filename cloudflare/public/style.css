@@ -68,6 +68,7 @@
   html {
     font-size: 15px;
     scroll-behavior: smooth;
+    scroll-padding-top: 210px; /* fixed header (148px) + sticky section nav (~50px) + gap */
   }
 
   body {
@@ -338,8 +339,24 @@
     background: var(--gradient-card);
     border-bottom: 1px solid var(--border-light);
     padding: var(--space-xl) clamp(var(--space-xl), 10vw, 200px);
-    margin-top: 0; /* nav strip is no longer fixed, flows naturally */
+    margin-top: 0;
     overflow: hidden;
+    position: relative;
+  }
+
+  .hero-image-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 45%;
+    background-image: url('https://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/img/logger-head-turtle_xio2vp.png');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.06;
+    pointer-events: none;
+    mask-image: linear-gradient(to right, transparent, black 30%);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 30%);
   }
 
   .hero-content {
@@ -347,9 +364,11 @@
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     flex-wrap: wrap;
     gap: var(--space-lg);
+    position: relative;
+    z-index: 1;
   }
 
   .hero-text h1 {
@@ -382,11 +401,18 @@
     font-weight: 500;
   }
 
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-lg);
+  }
+
   .btn-view-project {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 10px 20px;
+    padding: 12px 24px;
     background: var(--uwc-gold);
     color: #ffffff;
     border: none;
@@ -404,7 +430,7 @@
   }
 
   .btn-view-project:hover {
-    background: var(--uwc-gold);
+    background: #a8873f;
     color: #ffffff;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(189,154,79,0.4);
@@ -420,6 +446,61 @@
     gap: var(--space-lg);
     flex-wrap: wrap;
     min-width: 0;
+  }
+
+  /* ========================================
+     In-Page Section Nav
+     ======================================== */
+  .section-nav {
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-light);
+    padding: 0 clamp(var(--space-xl), 10vw, 200px);
+    position: sticky;
+    top: 148px; /* below fixed header */
+    z-index: 999;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .section-nav-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .section-nav-content::-webkit-scrollbar {
+    display: none;
+  }
+
+  .section-nav-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 20px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .section-nav-item:hover {
+    color: var(--uwc-blue);
+    background: rgba(0, 51, 102, 0.03);
+  }
+
+  .section-nav-item.active {
+    color: var(--uwc-blue);
+    border-bottom-color: var(--uwc-gold);
+    font-weight: 700;
   }
 
   .period-selector {
@@ -1868,6 +1949,10 @@
       padding-left: var(--space-xl);
       padding-right: var(--space-xl);
     }
+    .section-nav {
+      padding-left: var(--space-xl);
+      padding-right: var(--space-xl);
+    }
     .footer {
       padding-left: var(--space-xl);
       padding-right: var(--space-xl);
@@ -1911,6 +1996,15 @@
     .header-divider {
       display: none;
     }
+
+    .section-nav {
+      top: 110px; /* smaller header on tablet */
+    }
+
+    .section-nav-item {
+      padding: 10px 14px;
+      font-size: 0.72rem;
+    }
   }
 
   @media (max-width: 768px) {
@@ -1927,6 +2021,21 @@
     .journey-node {
       min-width: 200px;
       max-width: 260px;
+    }
+
+    .hero-right {
+      align-items: stretch;
+    }
+
+    .btn-view-project {
+      justify-content: center;
+    }
+
+    .hero-image-overlay {
+      width: 100%;
+      opacity: 0.04;
+      mask-image: linear-gradient(to bottom, transparent, black 40%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent, black 40%);
     }
 
     .hero-controls {

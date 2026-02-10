@@ -1311,3 +1311,54 @@
       });
     }
   });
+
+  // ========================================
+  // Section Nav Scroll Spy
+  // ========================================
+  document.addEventListener('DOMContentLoaded', function() {
+    var navItems = document.querySelectorAll('.section-nav-item');
+    var sectionIds = [];
+    navItems.forEach(function(item) {
+      var href = item.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        sectionIds.push(href.substring(1));
+      }
+    });
+
+    function updateActiveNav() {
+      var scrollY = window.scrollY || window.pageYOffset;
+      var offset = 260; // header + nav + buffer
+      var currentId = sectionIds[0]; // default to first
+
+      for (var i = sectionIds.length - 1; i >= 0; i--) {
+        var section = document.getElementById(sectionIds[i]);
+        if (section && section.getBoundingClientRect().top <= offset) {
+          currentId = sectionIds[i];
+          break;
+        }
+      }
+
+      navItems.forEach(function(item) {
+        var href = item.getAttribute('href');
+        if (href === '#' + currentId) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    }
+
+    var scrollTicking = false;
+    window.addEventListener('scroll', function() {
+      if (!scrollTicking) {
+        requestAnimationFrame(function() {
+          updateActiveNav();
+          scrollTicking = false;
+        });
+        scrollTicking = true;
+      }
+    });
+
+    // Initial state
+    updateActiveNav();
+  });

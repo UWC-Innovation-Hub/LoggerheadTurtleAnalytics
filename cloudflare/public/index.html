@@ -120,7 +120,7 @@
   </div>
 
   <!-- Dashboard Title Section -->
-  <section class="dashboard-hero">
+  <section class="dashboard-hero" id="top">
     <div class="hero-content">
       <div class="hero-text">
         <h1>Analytics Dashboard</h1>
@@ -132,35 +132,58 @@
           </span>
         </p>
       </div>
-      <div class="hero-controls">
-        <div class="period-selector">
-          <button class="period-btn" data-period="DAU">Today</button>
-          <button class="period-btn active" data-period="WEEKLY">Week</button>
-          <button class="period-btn" data-period="MONTHLY">Month</button>
-          <button class="period-btn" data-period="YEARLY">Year</button>
-        </div>
-        <div class="sync-status">
-          <span id="dateRangeDisplay" class="sync-date-label">Loading...</span>
-          <div class="sync-bar-container">
-            <div class="sync-bar-track">
-              <div class="sync-bar-fill" id="syncBarFill"></div>
-            </div>
-            <span class="sync-countdown" id="syncCountdown">Syncing...</span>
+      <div class="hero-right">
+        <a href="https://innovationhub.uwc.ac.za/jigspace/LoggerHeadTurtle/" target="_blank" class="btn-view-project" onclick="trackOutboundClick('visit_project_site', 'Dashboard Hero', 'LoggerHeadTurtle')">
+          Visit Project Site
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
+        <div class="hero-controls">
+          <div class="period-selector">
+            <button class="period-btn" data-period="DAU">Today</button>
+            <button class="period-btn active" data-period="WEEKLY">Week</button>
+            <button class="period-btn" data-period="MONTHLY">Month</button>
+            <button class="period-btn" data-period="YEARLY">Year</button>
           </div>
-          <span class="last-updated" id="lastUpdated"></span>
-          <div class="refresh-indicator" id="refreshIndicator">
-            <div class="spinner"></div>
+          <div class="sync-status">
+            <span id="dateRangeDisplay" class="sync-date-label">Loading...</span>
+            <div class="sync-bar-container">
+              <div class="sync-bar-track">
+                <div class="sync-bar-fill" id="syncBarFill"></div>
+              </div>
+              <span class="sync-countdown" id="syncCountdown">Syncing...</span>
+            </div>
+            <span class="last-updated" id="lastUpdated"></span>
+            <div class="refresh-indicator" id="refreshIndicator">
+              <div class="spinner"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+    <div class="hero-image-overlay"></div>
   </section>
+
+  <!-- In-Page Section Nav -->
+  <nav class="section-nav" id="sectionNav">
+    <div class="section-nav-content">
+      <a href="#top" class="section-nav-item active">Home</a>
+      <a href="#sectionAbout" class="section-nav-item">About</a>
+      <a href="#sectionTrends" class="section-nav-item">Trends</a>
+      <a href="#sectionAudience" class="section-nav-item">Audience</a>
+      <a href="#sectionJourney" class="section-nav-item">Journey</a>
+      <a href="#sectionData" class="section-nav-item">Data</a>
+    </div>
+  </nav>
 
   <!-- Main Content -->
   <main class="main-content" id="dashboardContent">
-    <!-- Section: Key Numbers -->
-    <div class="section-header">
-      <h2 class="section-title">Key Numbers</h2>
+    <!-- Section: About / Key Numbers -->
+    <div class="section-header" id="sectionAbout">
+      <h2 class="section-title">About</h2>
       <p class="section-subtitle">A quick summary of your most important metrics for the selected period.</p>
     </div>
 
@@ -263,7 +286,7 @@
     </section>
 
     <!-- Section: Trends -->
-    <div class="section-header">
+    <div class="section-header" id="sectionTrends">
       <h2 class="section-title">Trends & Performance</h2>
       <p class="section-subtitle">How engagement is changing over time and how your content performs.</p>
     </div>
@@ -381,7 +404,7 @@
     </section>
 
     <!-- Section: Audience -->
-    <div class="section-header">
+    <div class="section-header" id="sectionAudience">
       <h2 class="section-title">Audience Insights</h2>
       <p class="section-subtitle">Who your visitors are, where they come from, and what devices they use.</p>
     </div>
@@ -452,7 +475,7 @@
     </section>
 
     <!-- Section: User Journey -->
-    <div class="section-header">
+    <div class="section-header" id="sectionJourney">
       <h2 class="section-title">User Journey</h2>
       <p class="section-subtitle">How visitors move between your sites &mdash; from Google Sites to the project page to the 3D model.</p>
     </div>
@@ -542,7 +565,7 @@
     </section>
 
     <!-- Section: Detailed Data -->
-    <div class="section-header">
+    <div class="section-header" id="sectionData">
       <h2 class="section-title">Detailed Data</h2>
       <p class="section-subtitle">Drill down into which pages, events, and countries drive the most engagement.</p>
     </div>
