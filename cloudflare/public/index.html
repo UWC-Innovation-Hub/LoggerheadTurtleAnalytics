@@ -125,7 +125,7 @@
       <div class="hero-text">
         <h1>Analytics Dashboard</h1>
         <p class="project-subtitle">
-          Interactive Loggerhead Turtle Hatchlings
+          Interactive Loggerhead Turtle JigSpace Solution
           <span class="realtime-badge" id="realtimeBadge" title="Active users right now">
             <span class="realtime-dot"></span>
             <span id="realtimeCount">—</span> live
@@ -264,12 +264,12 @@
 
     <!-- Section: Trends -->
     <div class="section-header">
-      <h2 class="section-title">Trends & Performance</h2>
-      <p class="section-subtitle">How engagement is changing over time and how your content performs.</p>
+      <h2 class="section-title">Trends</h2>
+      <p class="section-subtitle">How engagement is changing over time.</p>
     </div>
 
-    <!-- Charts Row 1: Statistics -->
-    <section class="charts-section">
+    <!-- Charts Row 1: Statistics (full width) -->
+    <section class="charts-section charts-section-single">
       <div class="chart-card chart-wide">
         <div class="chart-header">
           <h3>Statistics</h3>
@@ -292,102 +292,16 @@
           <canvas id="timeSeriesChart"></canvas>
         </div>
       </div>
-
-      <div class="chart-card chart-radar">
-        <div class="chart-header">
-          <h3>Performance</h3>
-        </div>
-        <div class="chart-body chart-body-centered">
-          <canvas id="performanceChart"></canvas>
-        </div>
-        <div class="chart-legend-bottom">
-          <span class="legend-item">
-            <span class="legend-dot" style="background: #003366;"></span>
-            Current
-          </span>
-          <span class="legend-item">
-            <span class="legend-dot" style="background: #00C9A7;"></span>
-            Target
-          </span>
-        </div>
-      </div>
-
-      <div class="chart-card chart-acquisition">
-        <div class="chart-header">
-          <h3>User Acquisition</h3>
-        </div>
-        <div class="acquisition-stats">
-          <div class="acquisition-stat">
-            <div class="acquisition-icon new-users-acq">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="8.5" cy="7" r="4"></circle>
-                <line x1="20" y1="8" x2="20" y2="14"></line>
-                <line x1="23" y1="11" x2="17" y2="11"></line>
-              </svg>
-            </div>
-            <div class="acquisition-detail">
-              <span class="acquisition-value" id="acqNewUsers">-</span>
-              <span class="acquisition-label">New Users</span>
-            </div>
-          </div>
-          <div class="acquisition-stat">
-            <div class="acquisition-icon returning-users-acq">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-            </div>
-            <div class="acquisition-detail">
-              <span class="acquisition-value" id="acqReturningUsers">-</span>
-              <span class="acquisition-label">Returning Users</span>
-            </div>
-          </div>
-          <div class="acquisition-stat">
-            <div class="acquisition-icon sessions-acq">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-            </div>
-            <div class="acquisition-detail">
-              <span class="acquisition-value" id="acqSessionsPerUser">-</span>
-              <span class="acquisition-label">Sessions / User</span>
-            </div>
-          </div>
-          <div class="acquisition-stat">
-            <div class="acquisition-icon engagement-acq">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-              </svg>
-            </div>
-            <div class="acquisition-detail">
-              <span class="acquisition-value" id="acqEngagedSessions">-</span>
-              <span class="acquisition-label">Engaged Sessions</span>
-            </div>
-          </div>
-        </div>
-        <div class="acquisition-bar">
-          <div class="acquisition-bar-fill" id="acqNewUserBar" style="width: 60%;">
-            <span>New</span>
-          </div>
-          <div class="acquisition-bar-returning" id="acqReturnBar" style="width: 40%;">
-            <span>Returning</span>
-          </div>
-        </div>
-      </div>
     </section>
 
-    <!-- Section: Audience -->
+    <!-- Section: Audience & Journey -->
     <div class="section-header">
-      <h2 class="section-title">Audience Insights</h2>
-      <p class="section-subtitle">Who your visitors are, where they come from, and what devices they use.</p>
+      <h2 class="section-title">Audience & User Journey</h2>
+      <p class="section-subtitle">Who your visitors are, how they move between your sites &mdash; from Google Sites to the project page to the Interactive Loggerhead Turtle JigSpace Solution.</p>
     </div>
 
-    <!-- Charts Row 2: Activity & Breakdown -->
-    <section class="charts-section">
+    <!-- Charts Row 2: Activity, Journey, Devices -->
+    <section class="charts-section charts-section-audience">
       <div class="chart-card chart-activity">
         <div class="chart-header">
           <h3>Activity</h3>
@@ -427,16 +341,87 @@
         </div>
       </div>
 
-      <div class="chart-card chart-breakdown">
+      <div class="chart-card chart-journey-inline">
         <div class="chart-header">
-          <h3>Traffic Breakdown</h3>
+          <h3>User Journey</h3>
         </div>
-        <div class="breakdown-content">
-          <div class="breakdown-chart">
-            <canvas id="trafficChart"></canvas>
+        <div class="journey-flow-compact" id="journeyFlow">
+          <!-- Node 1: Google Sites -->
+          <div class="journey-node-compact" id="jnGoogleSites">
+            <div class="journey-node-icon journey-icon-gsites">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            </div>
+            <div class="journey-node-label">Google Sites</div>
+            <div class="journey-node-sublabel">Ideal Ocean Home</div>
+            <div class="journey-node-stats">
+              <span class="journey-stat-views" id="jnGSViews">—</span> views
+              <span class="journey-stat-sep">&middot;</span>
+              <span class="journey-stat-users" id="jnGSUsers">—</span> users
+            </div>
+            <div class="journey-node-time" id="jnGSTime">—</div>
           </div>
-          <div class="breakdown-legend" id="trafficLegend">
-            <!-- Populated by JS -->
+
+          <!-- Arrow 1 -->
+          <div class="journey-arrow-compact">
+            <div class="journey-arrow-line"></div>
+            <div class="journey-arrow-label" id="jaGStoIH">—%</div>
+            <svg class="journey-arrow-head" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <!-- Node 2: InnovationHub -->
+          <div class="journey-node-compact journey-node-primary" id="jnInnovationHub">
+            <div class="journey-node-icon journey-icon-ihub">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div class="journey-node-label">InnovationHub</div>
+            <div class="journey-node-sublabel">Loggerhead Turtle</div>
+            <div class="journey-node-stats">
+              <span class="journey-stat-views" id="jnIHViews">—</span> views
+              <span class="journey-stat-sep">&middot;</span>
+              <span class="journey-stat-users" id="jnIHUsers">—</span> users
+            </div>
+            <div class="journey-node-time" id="jnIHTime">—</div>
+          </div>
+
+          <!-- Arrow 2 -->
+          <div class="journey-arrow-compact">
+            <div class="journey-arrow-line"></div>
+            <div class="journey-arrow-label" id="jaIHtoJig">—%</div>
+            <svg class="journey-arrow-head" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+
+          <!-- Node 3: JigSpace -->
+          <div class="journey-node-compact" id="jnJigSpace">
+            <div class="journey-node-icon journey-icon-jig">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <div class="journey-node-label">JigSpace 3D</div>
+            <div class="journey-node-sublabel">Interactive Model</div>
+            <div class="journey-node-stats">
+              <span class="journey-stat-views" id="jnJigViews">—</span> clicks
+              <span class="journey-stat-sep">&middot;</span>
+              <span class="journey-stat-users" id="jnJigUsers">—</span> users
+            </div>
+            <div class="journey-node-time" id="jnJigTime">—</div>
+          </div>
+        </div>
+
+        <!-- Conversion funnel summary -->
+        <div class="journey-funnel-compact" id="journeyFunnel">
+          <div class="funnel-step">
+            <div class="funnel-bar" id="funnelBar1" style="width: 100%"></div>
+            <span class="funnel-label">Google Sites</span>
+            <span class="funnel-value" id="funnelVal1">—</span>
+          </div>
+          <div class="funnel-step">
+            <div class="funnel-bar funnel-bar-mid" id="funnelBar2" style="width: 60%"></div>
+            <span class="funnel-label">Project Page</span>
+            <span class="funnel-value" id="funnelVal2">—</span>
+          </div>
+          <div class="funnel-step">
+            <div class="funnel-bar funnel-bar-end" id="funnelBar3" style="width: 20%"></div>
+            <span class="funnel-label">Open Interactive Model</span>
+            <span class="funnel-value" id="funnelVal3">—</span>
           </div>
         </div>
       </div>
@@ -451,121 +436,50 @@
       </div>
     </section>
 
-    <!-- Section: User Journey -->
-    <div class="section-header">
-      <h2 class="section-title">User Journey</h2>
-      <p class="section-subtitle">How visitors move between your sites &mdash; from Google Sites to the project page to the 3D model.</p>
-    </div>
-
-    <section class="journey-section">
-      <div class="journey-card">
-        <div class="journey-flow" id="journeyFlow">
-          <!-- Node 1: Google Sites -->
-          <div class="journey-node" id="jnGoogleSites">
-            <div class="journey-node-icon journey-icon-gsites">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-            </div>
-            <div class="journey-node-label">Google Sites</div>
-            <div class="journey-node-sublabel">Ideal Ocean Home</div>
-            <div class="journey-node-stats">
-              <span class="journey-stat-views" id="jnGSViews">—</span> views
-              <span class="journey-stat-sep">&middot;</span>
-              <span class="journey-stat-users" id="jnGSUsers">—</span> users
-            </div>
-            <div class="journey-node-time" id="jnGSTime">—</div>
-          </div>
-
-          <!-- Arrow 1 -->
-          <div class="journey-arrow">
-            <div class="journey-arrow-line"></div>
-            <div class="journey-arrow-label" id="jaGStoIH">—%</div>
-            <svg class="journey-arrow-head" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-
-          <!-- Node 2: InnovationHub -->
-          <div class="journey-node journey-node-primary" id="jnInnovationHub">
-            <div class="journey-node-icon journey-icon-ihub">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            </div>
-            <div class="journey-node-label">InnovationHub</div>
-            <div class="journey-node-sublabel">Loggerhead Turtle</div>
-            <div class="journey-node-stats">
-              <span class="journey-stat-views" id="jnIHViews">—</span> views
-              <span class="journey-stat-sep">&middot;</span>
-              <span class="journey-stat-users" id="jnIHUsers">—</span> users
-            </div>
-            <div class="journey-node-time" id="jnIHTime">—</div>
-          </div>
-
-          <!-- Arrow 2 -->
-          <div class="journey-arrow">
-            <div class="journey-arrow-line"></div>
-            <div class="journey-arrow-label" id="jaIHtoJig">—%</div>
-            <svg class="journey-arrow-head" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-
-          <!-- Node 3: JigSpace -->
-          <div class="journey-node" id="jnJigSpace">
-            <div class="journey-node-icon journey-icon-jig">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-            </div>
-            <div class="journey-node-label">JigSpace 3D</div>
-            <div class="journey-node-sublabel">Interactive Model</div>
-            <div class="journey-node-stats">
-              <span class="journey-stat-views" id="jnJigViews">—</span> clicks
-              <span class="journey-stat-sep">&middot;</span>
-              <span class="journey-stat-users" id="jnJigUsers">—</span> users
-            </div>
-            <div class="journey-node-time" id="jnJigTime">—</div>
-          </div>
-        </div>
-
-        <!-- Conversion funnel summary -->
-        <div class="journey-funnel" id="journeyFunnel">
-          <div class="funnel-step">
-            <div class="funnel-bar" id="funnelBar1" style="width: 100%"></div>
-            <span class="funnel-label">Land on Google Sites</span>
-            <span class="funnel-value" id="funnelVal1">—</span>
-          </div>
-          <div class="funnel-step">
-            <div class="funnel-bar funnel-bar-mid" id="funnelBar2" style="width: 60%"></div>
-            <span class="funnel-label">Visit Project Page</span>
-            <span class="funnel-value" id="funnelVal2">—</span>
-          </div>
-          <div class="funnel-step">
-            <div class="funnel-bar funnel-bar-end" id="funnelBar3" style="width: 20%"></div>
-            <span class="funnel-label">Open 3D Model</span>
-            <span class="funnel-value" id="funnelVal3">—</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Section: Detailed Data -->
     <div class="section-header">
       <h2 class="section-title">Detailed Data</h2>
       <p class="section-subtitle">Drill down into which pages, events, and countries drive the most engagement.</p>
     </div>
 
-    <!-- Tables Section -->
-    <section class="tables-section tables-section-3col">
-      <div class="table-card">
+    <!-- Tables Section: Top Pages & Countries combined + GA4 Events -->
+    <section class="tables-section tables-section-2col">
+      <div class="table-card table-card-combined">
         <div class="table-header">
-          <h3>Top Pages</h3>
+          <h3>Top Pages & Countries</h3>
         </div>
-        <div class="table-body">
-          <table id="topPagesTable">
-            <thead>
-              <tr>
-                <th>Page Title</th>
-                <th>Views</th>
-                <th>Avg. Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
-            </tbody>
-          </table>
+        <div class="table-body-combined">
+          <div class="table-half">
+            <h4 class="table-sub-header">Pages</h4>
+            <table id="topPagesTable">
+              <thead>
+                <tr>
+                  <th class="th-page-title">Page Title</th>
+                  <th>Views</th>
+                  <th>Avg. Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-divider"></div>
+          <div class="table-half">
+            <h4 class="table-sub-header">Countries</h4>
+            <table id="countriesTable">
+              <thead>
+                <tr>
+                  <th>Country</th>
+                  <th>Users</th>
+                  <th>Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -580,26 +494,6 @@
                 <th>Event Name</th>
                 <th>Count</th>
                 <th>Users</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="table-card">
-        <div class="table-header">
-          <h3>Top Countries</h3>
-        </div>
-        <div class="table-body">
-          <table id="countriesTable">
-            <thead>
-              <tr>
-                <th>Country</th>
-                <th>Users</th>
-                <th>Share</th>
               </tr>
             </thead>
             <tbody>

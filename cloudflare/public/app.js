@@ -24,9 +24,7 @@
 
   // Chart instances
   let timeSeriesChart = null;
-  let performanceChart = null;
   let activityChart = null;
-  let trafficChart = null;
   let devicesChart = null;
 
   // Current period
@@ -271,63 +269,6 @@
       }
     });
 
-    // Performance Radar Chart
-    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
-    performanceChart = new Chart(performanceCtx, {
-      type: 'radar',
-      data: {
-        labels: ['Engagement', 'Sessions/User', 'Pages/Session', 'Avg Time', 'Return Rate'],
-        datasets: [
-          {
-            label: 'Current',
-            data: [65, 45, 70, 50, 55],
-            borderColor: colors.primary,
-            backgroundColor: 'rgba(0, 51, 102, 0.2)',
-            borderWidth: 2,
-            pointRadius: 3,
-            pointBackgroundColor: colors.primary
-          },
-          {
-            label: 'Target',
-            data: [80, 70, 85, 75, 80],
-            borderColor: colors.teal,
-            backgroundColor: 'rgba(0, 201, 167, 0.1)',
-            borderWidth: 2,
-            borderDash: [4, 4],
-            pointRadius: 3,
-            pointBackgroundColor: colors.teal
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          r: {
-            beginAtZero: true,
-            max: 100,
-            ticks: {
-              display: false,
-              stepSize: 20
-            },
-            grid: {
-              color: 'rgba(0, 0, 0, 0.06)'
-            },
-            angleLines: {
-              color: 'rgba(0, 0, 0, 0.06)'
-            },
-            pointLabels: {
-              font: { size: 10 },
-              color: '#718096'
-            }
-          }
-        }
-      }
-    });
-
     // Activity Mini Chart
     const activityCtx = document.getElementById('activityChart').getContext('2d');
     const activityGradient = activityCtx.createLinearGradient(0, 0, 0, 120);
@@ -358,38 +299,6 @@
         scales: {
           x: { display: false },
           y: { display: false }
-        }
-      }
-    });
-
-    // Traffic Doughnut Chart
-    const trafficCtx = document.getElementById('trafficChart').getContext('2d');
-    trafficChart = new Chart(trafficCtx, {
-      type: 'doughnut',
-      data: {
-        labels: [],
-        datasets: [{
-          data: [],
-          backgroundColor: chartColors,
-          borderWidth: 0,
-          hoverOffset: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        cutout: '70%',
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: 'rgba(255,255,255,0.95)',
-            titleColor: '#1a202c',
-            bodyColor: '#4a5568',
-            borderColor: '#e2e8f0',
-            borderWidth: 1,
-            padding: 10,
-            cornerRadius: 8
-          }
         }
       }
     });
@@ -488,12 +397,6 @@
       console.warn('[Dashboard] TimeSeries failed:', data.timeSeries);
     }
 
-    if (data.trafficSources && data.trafficSources.success) {
-      updateTrafficChart(data.trafficSources.data);
-    } else {
-      console.warn('[Dashboard] TrafficSources failed:', data.trafficSources);
-    }
-
     if (data.devices && data.devices.success) {
       updateDevicesChart(data.devices.data);
     } else {
@@ -510,18 +413,6 @@
       updateCountriesTable(data.countries.data);
     } else {
       console.warn('[Dashboard] Countries failed:', data.countries);
-    }
-
-    if (data.engagement && data.engagement.success) {
-      updatePerformanceChart(data.engagement.data);
-    } else {
-      console.warn('[Dashboard] Engagement failed:', data.engagement);
-    }
-
-    if (data.acquisition && data.acquisition.success) {
-      updateAcquisitionCard(data.acquisition.data);
-    } else {
-      console.warn('[Dashboard] Acquisition failed:', data.acquisition);
     }
 
     if (data.events && data.events.success) {
@@ -704,36 +595,6 @@
     activityChart.update('none');
   }
 
-  function updatePerformanceChart(data) {
-    if (data.values && data.values.length > 0) {
-      performanceChart.data.datasets[0].data = data.values;
-      performanceChart.update('none');
-    }
-  }
-
-  function updateTrafficChart(data) {
-    const legendContainer = document.getElementById('trafficLegend');
-    if (!data.labels || data.labels.length === 0) {
-      trafficChart.data.labels = ['No data'];
-      trafficChart.data.datasets[0].data = [1];
-      trafficChart.data.datasets[0].backgroundColor = ['#e2e8f0'];
-      trafficChart.update('none');
-      legendContainer.innerHTML = '<div class="empty-state-text">No traffic data for this period</div>';
-      return;
-    }
-    trafficChart.data.labels = data.labels;
-    trafficChart.data.datasets[0].data = data.values;
-    trafficChart.data.datasets[0].backgroundColor = chartColors;
-    trafficChart.update('none');
-
-    legendContainer.innerHTML = data.labels.map((label, i) => `
-      <div class="breakdown-legend-item">
-        <span class="breakdown-legend-dot" style="background: ${chartColors[i % chartColors.length]}"></span>
-        <span>${label}</span>
-      </div>
-    `).join('');
-  }
-
   function updateDevicesChart(data) {
     if (!data.labels || data.labels.length === 0) {
       devicesChart.data.labels = ['No data'];
@@ -763,7 +624,7 @@
 
     tbody.innerHTML = pages.slice(0, 8).map(page => `
       <tr>
-        <td class="page-title-cell" title="${escapeHtml(page.title)}">${escapeHtml(truncate(page.title, 35))}</td>
+        <td class="page-title-cell" title="${escapeHtml(page.title)}">${escapeHtml(truncate(page.title, 50))}</td>
         <td>${formatNumber(page.views)}</td>
         <td>${formatDuration(page.avgDuration)}</td>
       </tr>
@@ -832,24 +693,6 @@
         </tr>
       `;
     }).join('');
-  }
-
-  function updateAcquisitionCard(data) {
-    document.getElementById('acqNewUsers').textContent = formatNumber(data.newUsers);
-    document.getElementById('acqReturningUsers').textContent = formatNumber(data.returningUsers);
-    document.getElementById('acqSessionsPerUser').textContent = data.sessionsPerUser;
-    document.getElementById('acqEngagedSessions').textContent = formatNumber(data.engagedSessions);
-
-    const newBar = document.getElementById('acqNewUserBar');
-    const retBar = document.getElementById('acqReturnBar');
-    var newPct = Math.max(data.newUserPct, 0);
-    var retPct = Math.max(data.returningUserPct, 0);
-
-    // Ensure minimum visible width when non-zero, hide text when too small
-    newBar.style.width = newPct > 0 ? Math.max(newPct, 5) + '%' : '0%';
-    retBar.style.width = retPct > 0 ? Math.max(retPct, 5) + '%' : '0%';
-    newBar.querySelector('span').textContent = newPct >= 15 ? 'New ' + newPct + '%' : (newPct > 0 ? newPct + '%' : '');
-    retBar.querySelector('span').textContent = retPct >= 15 ? 'Ret ' + retPct + '%' : (retPct > 0 ? retPct + '%' : '');
   }
 
   // ========================================
@@ -1018,7 +861,7 @@
 
       pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
-      pdf.text('Analytics Dashboard - Interactive Loggerhead Turtle Hatchlings', pageWidth / 2, logoYEnd + 6, { align: 'center' });
+      pdf.text('Analytics Dashboard - Interactive Loggerhead Turtle JigSpace Solution', pageWidth / 2, logoYEnd + 6, { align: 'center' });
 
       pdf.setFontSize(6);
       const dateStr = document.getElementById('dateRangeDisplay').textContent;
