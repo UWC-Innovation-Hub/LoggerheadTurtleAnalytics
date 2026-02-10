@@ -36,6 +36,7 @@
   // Prevents white flashes on refresh by keeping stale data visible until new data arrives
   let cachedData = {};
   let isFirstLoad = true;
+  let isFetching = false; // prevents overlapping API calls
 
   // Auto-refresh config
   const SYNC_INTERVAL = 60; // seconds between data refreshes
@@ -392,6 +393,13 @@
   // Data Loading — with caching & graceful refresh
   // ========================================
   async function loadDashboardData(period) {
+    // Prevent overlapping fetches — if one is already in flight, skip
+    if (isFetching) {
+      console.log('[Dashboard] Fetch already in progress, skipping');
+      return;
+    }
+    isFetching = true;
+
     // Only show the loading spinner on first load — subsequent auto-refreshes
     // keep the old data fully visible while fetching in the background.
     if (isFirstLoad) {
@@ -413,10 +421,11 @@
         console.warn('[Dashboard] Refresh failed, keeping cached data:', error);
         showLoading(false);
         resetSyncCountdown();
-        // Don't touch the UI — stale data is better than no data
       } else {
         handleError(error);
       }
+    } finally {
+      isFetching = false;
     }
   }
 
@@ -524,12 +533,19 @@
     }, 5000);
   }
 
+  var preloaderHidden = false;
   function hidePreloader() {
+    if (preloaderHidden) return; // only run once
+    preloaderHidden = true;
     var progress = document.getElementById('preloaderProgress');
     var overlay = document.getElementById('preloaderOverlay');
     if (progress) progress.classList.add('complete');
     setTimeout(function() {
-      if (overlay) overlay.classList.add('hidden');
+      if (overlay) {
+        overlay.classList.add('hidden');
+        // Remove from DOM entirely after fade-out to free resources
+        setTimeout(function() { overlay.remove(); }, 600);
+      }
     }, 400);
   }
 
@@ -550,11 +566,14 @@
     var el = document.getElementById(id);
     if (!el) return;
     if (el.textContent === newText) return; // no change
+    // Cancel any pending transition timer
+    if (el._smoothTimer) clearTimeout(el._smoothTimer);
     el.style.transition = 'opacity 0.2s ease';
     el.style.opacity = '0.3';
-    setTimeout(function() {
+    el._smoothTimer = setTimeout(function() {
       el.textContent = newText;
       el.style.opacity = '1';
+      el._smoothTimer = null;
     }, 200);
   }
 
@@ -695,12 +714,14 @@
     if (!el) return;
     // If content hasn't changed, skip the update entirely
     if (el.innerHTML.trim() === newHTML.trim()) return;
-
+    // Cancel any pending transition timer
+    if (el._fadeTimer) clearTimeout(el._fadeTimer);
     el.style.transition = 'opacity 0.25s ease';
     el.style.opacity = '0.3';
-    setTimeout(function() {
+    el._fadeTimer = setTimeout(function() {
       el.innerHTML = newHTML;
       el.style.opacity = '1';
+      el._fadeTimer = null;
     }, 250);
   }
 
@@ -1408,13 +1429,19 @@
   function checkDeploymentVersion() {
     callAPI('getDeploymentVersion')
       .then(function(version) {
-        if (deploymentVersion && version && version !== deploymentVersion) {
+        // Only compare if both are valid non-empty strings
+        if (typeof deploymentVersion === 'string' && deploymentVersion.length > 0 &&
+            typeof version === 'string' && version.length > 0 &&
+            version !== deploymentVersion) {
           showUpdatePopup();
         }
-        deploymentVersion = version;
+        // Only store if valid
+        if (typeof version === 'string' && version.length > 0) {
+          deploymentVersion = version;
+        }
       })
       .catch(function() {
-        // Silent fail
+        // Silent fail — don't update deploymentVersion on error
       });
   }
 
