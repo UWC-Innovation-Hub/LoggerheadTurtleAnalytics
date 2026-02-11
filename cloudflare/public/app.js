@@ -1965,10 +1965,10 @@
     var label = document.getElementById('syncCountdown');
     if (!fill || !label) return;
 
-    var pct = ((SYNC_INTERVAL - syncCountdown) / SYNC_INTERVAL) * 100;
-    var newWidth = pct + '%';
-    // Only touch DOM when the value actually changed
-    if (fill.style.width !== newWidth) fill.style.width = newWidth;
+    var fraction = (SYNC_INTERVAL - syncCountdown) / SYNC_INTERVAL;
+    var newTransform = 'scaleX(' + fraction + ')';
+    // scaleX is compositor-only — no layout reflow on each 1s tick
+    if (fill.style.transform !== newTransform) fill.style.transform = newTransform;
 
     var newText;
     if (syncCountdown <= 0) {
