@@ -87,15 +87,31 @@ export async function onRequestPost(context) {
       try {
         var cached = await kv.get(cacheKey);
         if (cached !== null) {
-          return new Response(cached, {
-            status: 200,
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Cache': 'HIT',
-              'Cache-Control': 'no-store',
-              ...corsHeaders(origin),
-            },
-          });
+          // Validate cached value is real dashboard JSON before serving.
+          // Bad/corrupted entries are deleted and we fall through to origin.
+          var isValid = false;
+          try {
+            var parsed_cached = JSON.parse(cached);
+            isValid = parsed_cached &&
+                      parsed_cached.overview &&
+                      parsed_cached.overview.success === true &&
+                      parsed_cached.overview.data;
+          } catch (e) { /* not valid JSON */ }
+
+          if (isValid) {
+            return new Response(cached, {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Cache': 'HIT',
+                'Cache-Control': 'no-store',
+                ...corsHeaders(origin),
+              },
+            });
+          } else {
+            // Corrupted cache entry — purge it
+            context.waitUntil(kv.delete(cacheKey));
+          }
         }
       } catch (kvErr) {
         // KV read failed — fall through to origin
