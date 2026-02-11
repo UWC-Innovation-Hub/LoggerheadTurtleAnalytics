@@ -2166,3 +2166,37 @@
 
     observer.observe(navStrip);
   });
+
+  // ========================================
+  // Zone Freeze — only activate visible sections
+  // ========================================
+  // Sections outside the viewport have transitions/animations/pointer-events
+  // disabled via CSS (:not(.zone-active)).  This observer adds .zone-active
+  // only to sections currently visible, drastically reducing compositor work.
+  document.addEventListener('DOMContentLoaded', function() {
+    var sections = document.querySelectorAll(
+      '#dashboardContent .metrics-section, ' +
+      '#dashboardContent .charts-section, ' +
+      '#dashboardContent .tables-section, ' +
+      '#dashboardContent .chart-card.chart-geo-map'
+    );
+    if (!sections.length) return;
+
+    var zoneObserver = new IntersectionObserver(function(entries) {
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i].isIntersecting) {
+          entries[i].target.classList.add('zone-active');
+        } else {
+          entries[i].target.classList.remove('zone-active');
+        }
+      }
+    }, {
+      // Activate slightly before entering viewport (100px margin)
+      rootMargin: '100px 0px',
+      threshold: 0
+    });
+
+    for (var i = 0; i < sections.length; i++) {
+      zoneObserver.observe(sections[i]);
+    }
+  });

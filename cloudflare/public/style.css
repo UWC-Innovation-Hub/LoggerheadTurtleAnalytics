@@ -831,6 +831,34 @@
   }
 
   /* ========================================
+     Zone Freeze — kill transitions in off-screen sections
+     ======================================== */
+  /* By default, all sections inside #dashboardContent have transitions
+     and hover effects disabled.  The JS IntersectionObserver adds
+     .zone-active only to sections currently in the viewport. */
+  #dashboardContent .metrics-section,
+  #dashboardContent .charts-section,
+  #dashboardContent .tables-section,
+  #dashboardContent .chart-card {
+    contain: layout style;
+  }
+
+  #dashboardContent .metrics-section:not(.zone-active) *,
+  #dashboardContent .charts-section:not(.zone-active) *,
+  #dashboardContent .tables-section:not(.zone-active) *,
+  #dashboardContent .chart-card.chart-geo-map:not(.zone-active) * {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  #dashboardContent .metrics-section:not(.zone-active),
+  #dashboardContent .charts-section:not(.zone-active),
+  #dashboardContent .tables-section:not(.zone-active),
+  #dashboardContent .chart-card.chart-geo-map:not(.zone-active) {
+    pointer-events: none;
+  }
+
+  /* ========================================
      Metrics Section
      ======================================== */
   .metrics-section {
