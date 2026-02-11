@@ -18,9 +18,9 @@ const ALLOWED_ORIGINS = [
 // Actions whose responses are identical for all authenticated users
 // and safe to serve from cache without per-request auth.
 const CACHEABLE_ACTIONS = new Set(['fetchAllDashboardData']);
-// TTL slightly longer than the client's 60s sync interval so the cache
-// is still warm when the next refresh fires.  KV minimum TTL is 60s.
-const CACHE_TTL_SECONDS = 90;
+// TTL longer than the client's 120s sync interval so the cache is still
+// warm when the next refresh fires.  120s sync + 30s buffer = 150s.
+const CACHE_TTL_SECONDS = 150;
 
 function getCorsOrigin(request, env) {
   var origin = request.headers.get('Origin') || '';

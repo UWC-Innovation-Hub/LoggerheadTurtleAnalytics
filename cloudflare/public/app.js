@@ -59,7 +59,7 @@
   var renderDelayTimer = null;
 
   // Auto-refresh config
-  const SYNC_INTERVAL = 60; // seconds between data refreshes
+  const SYNC_INTERVAL = 120; // seconds between data refreshes
   let syncCountdown = SYNC_INTERVAL;
   let syncTimer = null;
   let deploymentVersion = null; // tracks current deployment version
