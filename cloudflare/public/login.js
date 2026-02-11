@@ -324,3 +324,10 @@
       }
     }
   }
+
+  // Register service worker on login page too (pre-caches dashboard assets)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    });
+  }

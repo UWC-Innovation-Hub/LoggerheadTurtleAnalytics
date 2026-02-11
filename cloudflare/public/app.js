@@ -2523,3 +2523,88 @@
       });
     });
   })();
+
+  // ========================================
+  // PWA — Service Worker + Install Prompt
+  // ========================================
+  (function() {
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js').catch(function() {});
+      });
+    }
+
+    // Capture the beforeinstallprompt event for deferred install
+    var deferredPrompt = null;
+    var installDismissed = false;
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Show custom install popup after a short delay (don't interrupt page load)
+      if (!installDismissed && !sessionStorage.getItem('pwa-install-dismissed')) {
+        setTimeout(showInstallPopup, 3000);
+      }
+    });
+
+    // Detect iOS/Safari (no beforeinstallprompt) and show manual instructions
+    function isIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    }
+    function isInStandaloneMode() {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true;
+    }
+
+    // Show install popup on iOS after delay (they can't auto-prompt)
+    if (isIOS() && !isInStandaloneMode()) {
+      if (!sessionStorage.getItem('pwa-install-dismissed')) {
+        window.addEventListener('load', function() {
+          setTimeout(showInstallPopup, 4000);
+        });
+      }
+    }
+
+    function showInstallPopup() {
+      var popup = document.getElementById('pwaInstallPopup');
+      if (!popup) return;
+
+      // Show the right content for iOS vs Android/Desktop
+      var nativeBtn = document.getElementById('pwaInstallBtn');
+      var iosInstructions = document.getElementById('pwaIOSInstructions');
+      if (isIOS()) {
+        if (nativeBtn) nativeBtn.style.display = 'none';
+        if (iosInstructions) iosInstructions.style.display = 'block';
+      } else {
+        if (nativeBtn) nativeBtn.style.display = '';
+        if (iosInstructions) iosInstructions.style.display = 'none';
+      }
+
+      popup.classList.add('visible');
+    }
+
+    // Install button click — trigger native prompt (Android/Desktop)
+    window.pwaInstallApp = function() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(result) {
+        deferredPrompt = null;
+        dismissInstallPopup();
+      });
+    };
+
+    // Dismiss popup
+    window.dismissInstallPopup = function() {
+      installDismissed = true;
+      sessionStorage.setItem('pwa-install-dismissed', '1');
+      var popup = document.getElementById('pwaInstallPopup');
+      if (popup) popup.classList.remove('visible');
+    };
+    var dismissInstallPopup = window.dismissInstallPopup;
+
+    // Hide popup if app gets installed
+    window.addEventListener('appinstalled', function() {
+      dismissInstallPopup();
+    });
+  })();
