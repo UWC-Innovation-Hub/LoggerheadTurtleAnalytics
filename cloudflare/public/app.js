@@ -2202,3 +2202,88 @@
       zoneObserver.observe(sections[i]);
     }
   });
+
+  // ========================================
+  // Canvas Recovery Watchdog
+  // ========================================
+  // When Chrome's compositor crashes (GPU process hiccup), <canvas> elements
+  // lose their pixel data — they go blank.  Chart.js doesn't know this
+  // happened and won't repaint.  This watchdog checks every 10s whether
+  // chart canvases are blank despite having data, and forces a redraw.
+  (function() {
+    var WATCHDOG_INTERVAL = 10000; // 10 seconds
+
+    function isCanvasBlank(canvas) {
+      if (!canvas || !canvas.width || !canvas.height) return true;
+      try {
+        var ctx = canvas.getContext('2d');
+        // Sample a small strip from the middle of the canvas
+        var y = Math.floor(canvas.height / 2);
+        var data = ctx.getImageData(0, y, canvas.width, 1).data;
+        // Check if every pixel is transparent (all zeros)
+        for (var i = 3; i < data.length; i += 4) {
+          if (data[i] !== 0) return false; // found a non-transparent pixel
+        }
+        return true; // all transparent — canvas is blank
+      } catch (e) {
+        return false; // cross-origin or security error, assume not blank
+      }
+    }
+
+    function recoverCharts() {
+      var recovered = false;
+      var noAnim = { duration: 0 };
+
+      // Chart.js charts — if the instance has data but its canvas is blank, force update
+      var chartPairs = [
+        { chart: function() { return timeSeriesChart; }, id: 'timeSeriesChart' },
+        { chart: function() { return activityChart; }, id: 'activityChart' },
+        { chart: function() { return devicesChart; }, id: 'devicesChart' },
+        { chart: function() { return bounceSparkline; }, id: 'bounceSparkline' }
+      ];
+
+      for (var i = 0; i < chartPairs.length; i++) {
+        var inst = chartPairs[i].chart();
+        if (!inst) continue;
+        var canvas = inst.canvas;
+        if (!canvas) continue;
+        // Only recover if the chart has data (not in "No data" / empty state)
+        var hasData = inst.data && inst.data.datasets && inst.data.datasets[0] &&
+                      inst.data.datasets[0].data && inst.data.datasets[0].data.length > 0 &&
+                      !(inst.data.datasets[0].data.length === 1 && inst.data.datasets[0].data[0] === 0);
+        if (hasData && isCanvasBlank(canvas)) {
+          console.warn('[Watchdog] Recovering blank chart:', chartPairs[i].id);
+          inst.update(noAnim);
+          recovered = true;
+        }
+      }
+
+      // Geo map canvas — if it was drawn before but is now blank, redraw
+      var geoCanvas = document.getElementById('geoMapCanvas');
+      if (geoCanvas && geoCanvasReady && geoCanvas._countryMap) {
+        var hasGeoData = Object.keys(geoCanvas._countryMap).length > 0;
+        if (hasGeoData && isCanvasBlank(geoCanvas)) {
+          console.warn('[Watchdog] Recovering blank geo map');
+          _drawGeoCanvasImmediate(geoCanvas, geoCanvas._countryMap, geoCanvas._maxUsers || 0);
+          recovered = true;
+        }
+      }
+
+      // If we recovered anything, clear fingerprints so the next sync
+      // also forces a full re-render (belt and suspenders)
+      if (recovered) {
+        dataFingerprints = {};
+      }
+    }
+
+    setInterval(recoverCharts, WATCHDOG_INTERVAL);
+
+    // Also recover when tab becomes visible again — compositor may have
+    // discarded canvas backing stores while the tab was hidden.
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        // Small delay to let the compositor re-attach
+        setTimeout(recoverCharts, 500);
+      }
+    });
+  })();
