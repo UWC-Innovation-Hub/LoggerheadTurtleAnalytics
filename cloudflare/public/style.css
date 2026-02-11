@@ -827,10 +827,6 @@
   /* ========================================
      Metrics Section
      ======================================== */
-  #dashboardContent {
-    transition: opacity 0.15s ease;
-  }
-
   .metrics-section {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
