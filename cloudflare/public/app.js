@@ -1316,210 +1316,512 @@
   });
 
   // ========================================
-  // PDF Export Helpers — canvas → img swap
+  // PDF Export — Pure jsPDF Canvas Rendering
   // ========================================
-  // html2canvas cannot render <canvas> elements — they appear blank.
-  // We swap each canvas with a static <img> before capture, then restore.
-  function swapCanvasToImg(canvas, dataURL) {
-    if (!canvas || !canvas.parentNode) return null;
-    var parent = canvas.parentNode;
-    var img = document.createElement('img');
-    img.src = dataURL;
-    img.className = canvas.className;
-    // Only copy dimensional styles — copying all computedStyle breaks layout
-    img.style.width = canvas.offsetWidth + 'px';
-    img.style.height = canvas.offsetHeight + 'px';
-    img.style.display = 'block';
-    parent.replaceChild(img, canvas);
-    return { original: canvas, replacement: img, parent: parent };
-  }
+  // Draws each dashboard section directly onto the PDF using jsPDF primitives.
+  // Reads from cachedData (not the live DOM) and snapshots chart images
+  // via .toBase64Image() / .toDataURL() — zero DOM manipulation required.
 
-  function restoreCanvasFromImg(swap) {
-    if (!swap || !swap.replacement.parentNode) return;
-    swap.replacement.parentNode.replaceChild(swap.original, swap.replacement);
-  }
+  var PDF_COLORS = {
+    uwcBlue:      [0, 51, 102],
+    uwcNavy:      [10, 26, 92],
+    uwcGold:      [189, 154, 79],
+    teal:         [0, 201, 167],
+    purple:       [132, 94, 194],
+    red:          [139, 21, 56],
+    textPrimary:  [26, 32, 44],
+    textSecondary:[74, 85, 104],
+    textMuted:    [113, 128, 150],
+    borderLight:  [226, 232, 240],
+    bgLight:      [245, 247, 250],
+    white:        [255, 255, 255],
+    positive:     [16, 185, 129],
+    negative:     [239, 68, 68]
+  };
 
-  // ========================================
-  // PDF Export
-  // ========================================
+  var channelColorMap = {
+    'Organic Search': [0, 51, 102],
+    'Direct':         [0, 201, 167],
+    'Referral':       [189, 154, 79],
+    'Organic Social': [132, 94, 194],
+    'Paid Search':    [214, 93, 177],
+    'Email':          [255, 150, 113],
+    'Display':        [0, 137, 186],
+    'Unassigned':     [160, 174, 192]
+  };
+
   async function exportToPDF() {
     var btn = document.getElementById('exportPdfBtn');
     if (!btn) return;
     var originalHTML = btn.innerHTML;
-
     btn.innerHTML = '<div class="spinner"></div> Generating...';
     btn.disabled = true;
 
     try {
-      if (!window.jspdf) {
-        throw new Error('jsPDF library not loaded');
-      }
-      var jsPDF = window.jspdf.jsPDF;
-      if (!jsPDF) {
-        throw new Error('jsPDF constructor not found');
-      }
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+      var data = cachedData[currentPeriod];
+      if (!data) { alert('No data loaded yet. Please wait for the dashboard to load.'); return; }
+      if (!window.jspdf || !window.jspdf.jsPDF) { throw new Error('jsPDF library not loaded'); }
+
+      var jsPDFLib = window.jspdf.jsPDF;
+      var pdf = new jsPDFLib('p', 'mm', 'a4');
+      var pageWidth = pdf.internal.pageSize.getWidth();
+      var pageHeight = pdf.internal.pageSize.getHeight();
 
       // Layout constants
-      const headerHeight = 30;
-      const footerHeight = 12;
-      const contentMargin = 2;
-      const sideMargin = 3;
-      const availableHeight = pageHeight - headerHeight - footerHeight - (contentMargin * 2);
-      const contentWidth = pageWidth - (sideMargin * 2);
+      var headerH = 30, footerH = 12, side = 8, gap = 2;
+      var cw = pageWidth - side * 2; // content width
+      var usableBottom = pageHeight - footerH - gap;
+      var cursorY = headerH + gap + 2;
+      var pageNum = 1;
 
-      // Fetch logo (non-blocking for speed)
+      // Fetch logo
       var logoBase64 = null;
-      try {
-        logoBase64 = await callAPI('fetchLogoAsBase64');
-      } catch(e) { console.warn('Logo embed failed:', e); }
+      try { logoBase64 = await callAPI('fetchLogoAsBase64'); } catch(e) {}
 
-      // Helper: draw page header + footer
-      function drawPageChrome(pageNum, totalPages) {
-        // Header - white background
+      // Snapshot chart images (instant, non-destructive reads)
+      var chartImgs = {};
+      try { if (timeSeriesChart && timeSeriesChart.canvas) chartImgs.timeSeries = timeSeriesChart.toBase64Image(); } catch(e) {}
+      try { if (activityChart && activityChart.canvas) chartImgs.activity = activityChart.toBase64Image(); } catch(e) {}
+      try { if (devicesChart && devicesChart.canvas) chartImgs.devices = devicesChart.toBase64Image(); } catch(e) {}
+      try { if (bounceSparkline && bounceSparkline.canvas) chartImgs.bounce = bounceSparkline.toBase64Image(); } catch(e) {}
+      try { var gc = document.getElementById('geoMapCanvas'); if (gc) chartImgs.geoMap = gc.toDataURL('image/png'); } catch(e) {}
+
+      // Date range from cached data
+      var dr = data.overview && data.overview.dateRange;
+      var dateStr = '';
+      if (dr) {
+        var s = formatDate(dr.startDate), e = formatDate(dr.endDate);
+        dateStr = s === e ? s : s + ' — ' + e;
+      }
+
+      // ── Helper: draw page header + footer ──
+      function drawPageChrome(pNum, totalP) {
         pdf.setFillColor(255, 255, 255);
-        pdf.rect(0, 0, pageWidth, headerHeight, 'F');
+        pdf.rect(0, 0, pageWidth, headerH, 'F');
 
         var logoYEnd = 12;
         if (logoBase64) {
           try {
-            var logoH = 10;
-            var tempImg = new Image();
-            tempImg.src = logoBase64;
-            var logoW = (tempImg.naturalWidth / tempImg.naturalHeight) * logoH || logoH * 3;
-            pdf.addImage(logoBase64, 'PNG', (pageWidth - logoW) / 2, 5, logoW, logoH);
+            var lh = 10, ti = new Image(); ti.src = logoBase64;
+            var lw = (ti.naturalWidth / ti.naturalHeight) * lh || lh * 3;
+            pdf.addImage(logoBase64, 'PNG', (pageWidth - lw) / 2, 5, lw, lh);
             logoYEnd = 16;
-          } catch(e) { /* skip logo on this page */ }
+          } catch(e) {}
         }
-
         pdf.setTextColor(0, 0, 0);
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9); pdf.setFont('helvetica', 'bold');
         pdf.text('UWC Immersive Zone', pageWidth / 2, logoYEnd + 2, { align: 'center' });
-
-        pdf.setFontSize(7);
-        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7); pdf.setFont('helvetica', 'normal');
         var periodLabel = { DAU: 'Today', WEEKLY: 'Weekly', MONTHLY: 'Monthly', YEARLY: 'Yearly' }[currentPeriod] || currentPeriod;
-        pdf.text('Analytics Dashboard — ' + periodLabel + ' Report', pageWidth / 2, logoYEnd + 6, { align: 'center' });
-
+        pdf.text('Analytics Dashboard \u2014 ' + periodLabel + ' Report', pageWidth / 2, logoYEnd + 6, { align: 'center' });
         pdf.setFontSize(6);
-        var dateEl = document.getElementById('dateRangeDisplay');
-        var dateStr = dateEl ? dateEl.textContent : '';
         pdf.text('Report Period: ' + dateStr, pageWidth / 2, logoYEnd + 10, { align: 'center' });
-
-        // Blue line below header
         pdf.setFillColor(10, 26, 92);
-        pdf.rect(0, headerHeight - 1.5, pageWidth, 1.5, 'F');
-
+        pdf.rect(0, headerH - 1.5, pageWidth, 1.5, 'F');
         // Footer
         pdf.setFillColor(0, 34, 68);
-        pdf.rect(0, pageHeight - footerHeight, pageWidth, footerHeight, 'F');
-
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(7);
+        pdf.rect(0, pageHeight - footerH, pageWidth, footerH, 'F');
+        pdf.setTextColor(255, 255, 255); pdf.setFontSize(7);
         pdf.text('University of the Western Cape | UWC Immersive Zone | 405 Voortrekker Road, Oostersee | infouih@uwc.ac.za',
-                 pageWidth / 2, pageHeight - footerHeight + 4.5, { align: 'center' });
-
-        if (totalPages > 1) {
+                 pageWidth / 2, pageHeight - footerH + 4.5, { align: 'center' });
+        if (totalP > 1) {
           pdf.setFontSize(5.5);
-          pdf.text('Page ' + pageNum + ' of ' + totalPages, pageWidth - sideMargin, pageHeight - footerHeight + 9, { align: 'right' });
+          pdf.text('Page ' + pNum + ' of ' + totalP, pageWidth - side, pageHeight - footerH + 9, { align: 'right' });
         }
       }
 
-      // Hide tooltips before capture
-      var tooltip = document.getElementById('geoTooltip');
-      if (tooltip) tooltip.style.display = 'none';
+      // ── Helper: ensure vertical space, add page if needed ──
+      function ensureSpace(mm) {
+        if (cursorY + mm > usableBottom) {
+          pdf.addPage(); pageNum++;
+          drawPageChrome(pageNum, 0);
+          cursorY = headerH + gap + 2;
+        }
+      }
 
-      // Swap all <canvas> elements with <img> snapshots before capture.
-      // html2canvas cannot render canvas content — they appear blank.
-      // We snapshot each canvas first, then swap, so the dataURL is captured
-      // while the canvas is still live in the DOM.
-      var canvasSwaps = [];
-      var chartInstances = [timeSeriesChart, activityChart, devicesChart, bounceSparkline];
-      try {
-        chartInstances.forEach(function(chart) {
-          if (chart && chart.canvas && chart.canvas.parentNode) {
-            var dataURL = chart.toBase64Image();
-            var sw = swapCanvasToImg(chart.canvas, dataURL);
-            if (sw) canvasSwaps.push(sw);
+      // ── Helper: section header ──
+      function sectionHead(title) {
+        ensureSpace(10);
+        // Gold accent line
+        pdf.setFillColor.apply(pdf, PDF_COLORS.uwcGold);
+        pdf.rect(side, cursorY, 12, 0.8, 'F');
+        cursorY += 3;
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(11);
+        pdf.setTextColor.apply(pdf, PDF_COLORS.uwcNavy);
+        pdf.text(title, side, cursorY);
+        cursorY += 5;
+      }
+
+      // ── Helper: draw a data table ──
+      function drawTable(headers, rows, colWidths) {
+        if (!rows || rows.length === 0) return;
+        var rowH = 5.5, hdrH = 6;
+        var totalW = colWidths.reduce(function(a,b){return a+b;}, 0);
+        var scale = cw / totalW;
+        var scaledW = colWidths.map(function(w){return w * scale;});
+
+        function drawHeaderRow() {
+          pdf.setFillColor.apply(pdf, PDF_COLORS.bgLight);
+          pdf.rect(side, cursorY - 0.5, cw, hdrH, 'F');
+          pdf.setFont('helvetica', 'bold'); pdf.setFontSize(6.5);
+          pdf.setTextColor.apply(pdf, PDF_COLORS.uwcBlue);
+          var x = side + 1;
+          headers.forEach(function(h, i) {
+            pdf.text(h, x, cursorY + 3.5);
+            x += scaledW[i];
+          });
+          cursorY += hdrH;
+        }
+
+        ensureSpace(hdrH + rowH * Math.min(rows.length, 3));
+        drawHeaderRow();
+
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(6.5);
+        rows.forEach(function(row, ri) {
+          if (cursorY + rowH > usableBottom) {
+            pdf.addPage(); pageNum++;
+            drawPageChrome(pageNum, 0);
+            cursorY = headerH + gap + 2;
+            drawHeaderRow();
+          }
+          // Alternating stripe
+          if (ri % 2 === 1) {
+            pdf.setFillColor(250, 251, 252);
+            pdf.rect(side, cursorY - 0.5, cw, rowH, 'F');
+          }
+          // Row border
+          pdf.setDrawColor.apply(pdf, PDF_COLORS.borderLight);
+          pdf.line(side, cursorY + rowH - 0.5, side + cw, cursorY + rowH - 0.5);
+
+          pdf.setTextColor.apply(pdf, PDF_COLORS.textPrimary);
+          var x = side + 1;
+          row.forEach(function(cell, ci) {
+            var txt = String(cell || '');
+            // Truncate long text to fit column
+            var maxChars = Math.floor(scaledW[ci] / 1.6);
+            if (txt.length > maxChars) txt = txt.substring(0, maxChars - 1) + '\u2026';
+            pdf.text(txt, x, cursorY + 3.5);
+            x += scaledW[ci];
+          });
+          cursorY += rowH;
+        });
+        cursorY += 2;
+      }
+
+      // ── Helper: add chart image ──
+      function addChartImage(imgData, maxH) {
+        if (!imgData) {
+          pdf.setTextColor.apply(pdf, PDF_COLORS.textMuted);
+          pdf.setFontSize(8);
+          pdf.text('Chart unavailable', side + cw / 2, cursorY + 10, { align: 'center' });
+          cursorY += 15;
+          return;
+        }
+        try {
+          var h = Math.min(maxH, cw / 2.2);
+          ensureSpace(h + 4);
+          pdf.addImage(imgData, 'PNG', side, cursorY, cw, h);
+          cursorY += h + 3;
+        } catch(e) {
+          pdf.setTextColor.apply(pdf, PDF_COLORS.textMuted);
+          pdf.setFontSize(8);
+          pdf.text('Chart render failed', side + cw / 2, cursorY + 10, { align: 'center' });
+          cursorY += 15;
+        }
+      }
+
+      // ══════════════════════════════════════
+      // DRAW PAGE 1 HEADER
+      // ══════════════════════════════════════
+      drawPageChrome(1, 0);
+
+      // ── SECTION: Key Numbers ──
+      sectionHead('Key Numbers');
+      if (data.overview && data.overview.success) {
+        var m = data.overview.data;
+        var cards = [
+          { label: 'Total Users', value: formatNumber(m.totalUsers), change: m.changes ? m.changes.totalUsers : null },
+          { label: 'Sessions', value: formatNumber(m.sessions), change: m.changes ? m.changes.sessions : null },
+          { label: 'Page Views', value: formatNumber(m.pageViews), change: m.changes ? m.changes.pageViews : null },
+          { label: 'Avg Duration', value: formatDuration(m.avgSessionDuration), change: m.changes ? m.changes.avgSessionDuration : null }
+        ];
+        var cardW = (cw - 6) / 4;
+        var cardH = 20;
+        ensureSpace(cardH + 10);
+
+        cards.forEach(function(c, i) {
+          var cx = side + i * (cardW + 2);
+          // Card background
+          pdf.setFillColor.apply(pdf, PDF_COLORS.bgLight);
+          pdf.roundedRect(cx, cursorY, cardW, cardH, 2, 2, 'F');
+          // Label
+          pdf.setFont('helvetica', 'normal'); pdf.setFontSize(6);
+          pdf.setTextColor.apply(pdf, PDF_COLORS.textMuted);
+          pdf.text(c.label, cx + 3, cursorY + 5);
+          // Value
+          pdf.setFont('helvetica', 'bold'); pdf.setFontSize(14);
+          pdf.setTextColor.apply(pdf, PDF_COLORS.uwcBlue);
+          pdf.text(c.value, cx + 3, cursorY + 13);
+          // Change indicator
+          if (c.change !== null && c.change !== undefined) {
+            var pct = parseFloat(c.change);
+            var changeText, changeColor;
+            if (isNaN(pct)) { changeText = 'No prior data'; changeColor = PDF_COLORS.textMuted; }
+            else if (pct > 0) { changeText = '+' + pct.toFixed(1) + '% vs prev'; changeColor = PDF_COLORS.positive; }
+            else if (pct < 0) { changeText = pct.toFixed(1) + '% vs prev'; changeColor = PDF_COLORS.negative; }
+            else { changeText = '0% vs prev'; changeColor = PDF_COLORS.textMuted; }
+            pdf.setFont('helvetica', 'normal'); pdf.setFontSize(5.5);
+            pdf.setTextColor.apply(pdf, changeColor);
+            pdf.text(changeText, cx + 3, cursorY + 17.5);
           }
         });
-        var geoCanvas = document.getElementById('geoMapCanvas');
-        if (geoCanvas && geoCanvas.parentNode) {
-          var dataURL = geoCanvas.toDataURL('image/png');
-          var sw = swapCanvasToImg(geoCanvas, dataURL);
-          if (sw) canvasSwaps.push(sw);
-        }
-      } catch(e) { console.warn('Canvas swap warning:', e); }
+        cursorY += cardH + 3;
 
-      // Capture dashboard content
-      var content = document.getElementById('dashboardContent');
-      if (!content) throw new Error('Dashboard content element not found');
-      if (typeof html2canvas !== 'function') throw new Error('html2canvas library not loaded');
-      var capturedCanvas;
-      try {
-        capturedCanvas = await html2canvas(content, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#f5f7fa'
-        });
-      } finally {
-        // Always restore canvases and tooltip — even if html2canvas throws
-        if (tooltip) tooltip.style.display = '';
-        canvasSwaps.forEach(function(sw) { restoreCanvasFromImg(sw); });
-        // Tell Chart.js instances to reclaim their canvas rendering contexts
-        chartInstances.forEach(function(chart) {
-          if (chart) { try { chart.resize(); } catch(e) {} }
-        });
+        // Activity stats row
+        var statsLine = 'New Users: ' + formatNumber(m.newUsers) +
+          '   |   Engagement: ' + (m.engagementRate || 0) + '%' +
+          '   |   Bounce Rate: ' + (m.bounceRate || 0) + '%';
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7);
+        pdf.setTextColor.apply(pdf, PDF_COLORS.textSecondary);
+        pdf.text(statsLine, side, cursorY + 3);
+        cursorY += 7;
       }
 
-      // Calculate how the image maps to pages
-      const imgWidthPx = capturedCanvas.width;
-      const imgHeightPx = capturedCanvas.height;
-      const imgWidth = contentWidth; // use full content width
-      const imgHeight = imgWidth * (imgHeightPx / imgWidthPx);
+      // ── SECTION: User Journey ──
+      if (data.pageFlow && data.pageFlow.success) {
+        sectionHead('User Journey');
+        var j = computeJourneyData(
+          data.pageFlow.data,
+          data.events ? data.events.data : []
+        );
 
-      // If content fits on one page, use single page layout
-      if (imgHeight <= availableHeight) {
-        drawPageChrome(1, 1);
-        var xOff = (pageWidth - imgWidth) / 2;
-        var imgData = capturedCanvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', xOff, headerHeight + contentMargin, imgWidth, imgHeight);
-      } else {
-        // Multi-page: slice the captured image into page-sized chunks
-        var totalPages = Math.ceil(imgHeight / availableHeight);
-        var sliceHeightPx = Math.floor(imgHeightPx / totalPages);
+        var nodeW = (cw - 20) / 3;
+        var nodeH = 22;
+        var arrowW = 10;
+        ensureSpace(nodeH + 30);
 
-        for (var p = 0; p < totalPages; p++) {
-          if (p > 0) pdf.addPage();
-          drawPageChrome(p + 1, totalPages);
+        var nodes = [
+          { label: 'Google Sites', sub: 'Ideal Ocean Home', views: j.gsViews, users: j.gsUsers, time: j.gsAvgDuration, color: PDF_COLORS.uwcBlue },
+          { label: 'InnovationHub', sub: 'Project Page', views: j.ihViews, users: j.ihUsers, time: j.ihAvgDuration, color: PDF_COLORS.teal },
+          { label: 'JigSpace 3D', sub: 'Interactive Model', views: j.jigClicks, users: j.jigUsers, time: 0, color: PDF_COLORS.uwcGold }
+        ];
+        var arrows = [j.gsToIhPct, j.ihToJigPct];
 
-          // Create a slice canvas for this page
-          var sliceY = p * sliceHeightPx;
-          var sliceH = Math.min(sliceHeightPx, imgHeightPx - sliceY);
-          var sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = imgWidthPx;
-          sliceCanvas.height = sliceH;
-          var sliceCtx = sliceCanvas.getContext('2d');
-          sliceCtx.drawImage(capturedCanvas, 0, sliceY, imgWidthPx, sliceH, 0, 0, imgWidthPx, sliceH);
+        nodes.forEach(function(n, i) {
+          var nx = side + i * (nodeW + arrowW);
+          // Node box
+          pdf.setFillColor.apply(pdf, PDF_COLORS.bgLight);
+          pdf.roundedRect(nx, cursorY, nodeW, nodeH, 1.5, 1.5, 'F');
+          // Color accent top bar
+          pdf.setFillColor.apply(pdf, n.color);
+          pdf.rect(nx, cursorY, nodeW, 1.2, 'F');
+          // Label
+          pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7);
+          pdf.setTextColor.apply(pdf, PDF_COLORS.textPrimary);
+          pdf.text(n.label, nx + nodeW / 2, cursorY + 5.5, { align: 'center' });
+          // Sublabel
+          pdf.setFont('helvetica', 'normal'); pdf.setFontSize(5.5);
+          pdf.setTextColor.apply(pdf, PDF_COLORS.textMuted);
+          pdf.text(n.sub, nx + nodeW / 2, cursorY + 9, { align: 'center' });
+          // Stats
+          pdf.setFontSize(6);
+          pdf.setTextColor.apply(pdf, PDF_COLORS.textSecondary);
+          var viewLabel = i === 2 ? ' clicks' : ' views';
+          pdf.text(formatNumber(n.views) + viewLabel + '  \u00b7  ' + formatNumber(n.users) + ' users', nx + nodeW / 2, cursorY + 14, { align: 'center' });
+          if (n.time > 0) {
+            pdf.text('avg ' + formatDuration(n.time), nx + nodeW / 2, cursorY + 18, { align: 'center' });
+          }
 
-          var sliceImgData = sliceCanvas.toDataURL('image/jpeg', 0.92);
-          var sliceImgHeight = imgWidth * (sliceH / imgWidthPx);
-          var xOff = (pageWidth - imgWidth) / 2;
-          pdf.addImage(sliceImgData, 'JPEG', xOff, headerHeight + contentMargin, imgWidth, sliceImgHeight);
+          // Arrow to next node
+          if (i < 2) {
+            var ax = nx + nodeW + 1;
+            var ay = cursorY + nodeH / 2;
+            pdf.setDrawColor.apply(pdf, PDF_COLORS.uwcGold);
+            pdf.setLineWidth(0.4);
+            pdf.line(ax, ay, ax + arrowW - 2, ay);
+            // Arrowhead
+            pdf.line(ax + arrowW - 4, ay - 1.5, ax + arrowW - 2, ay);
+            pdf.line(ax + arrowW - 4, ay + 1.5, ax + arrowW - 2, ay);
+            // Percentage label
+            pdf.setFont('helvetica', 'bold'); pdf.setFontSize(5.5);
+            pdf.setTextColor.apply(pdf, PDF_COLORS.uwcGold);
+            pdf.text(arrows[i] + '%', ax + arrowW / 2, ay - 2.5, { align: 'center' });
+          }
+        });
+        cursorY += nodeH + 4;
+
+        // Funnel bars
+        var maxFunnel = Math.max(j.gsViews, j.ihViews, j.jigClicks, 1);
+        var funnelData = [
+          { label: 'Google Sites', val: j.gsViews, unit: 'views', color: PDF_COLORS.uwcBlue },
+          { label: 'Project Page', val: j.ihViews, unit: 'views', color: PDF_COLORS.teal },
+          { label: 'Interactive Model', val: j.jigClicks, unit: 'clicks', color: PDF_COLORS.uwcGold }
+        ];
+        var barH = 4;
+        funnelData.forEach(function(f) {
+          var bw = Math.max((f.val / maxFunnel) * cw * 0.8, cw * 0.03);
+          pdf.setFillColor.apply(pdf, f.color);
+          pdf.roundedRect(side, cursorY, bw, barH, 1, 1, 'F');
+          pdf.setFont('helvetica', 'normal'); pdf.setFontSize(5.5);
+          pdf.setTextColor.apply(pdf, PDF_COLORS.textPrimary);
+          pdf.text(f.label + ': ' + formatNumber(f.val) + ' ' + f.unit, side + bw + 2, cursorY + 3);
+          cursorY += barH + 2;
+        });
+        cursorY += 3;
+      }
+
+      // ── SECTION: Trends ──
+      sectionHead('Trends \u2014 Statistics');
+      // Legend row
+      var legendItems = [
+        { label: 'Users', color: PDF_COLORS.uwcBlue },
+        { label: 'Sessions', color: PDF_COLORS.teal },
+        { label: 'Page Views', color: PDF_COLORS.uwcGold }
+      ];
+      var lx = side;
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(6);
+      legendItems.forEach(function(li) {
+        pdf.setFillColor.apply(pdf, li.color);
+        pdf.circle(lx + 1.5, cursorY - 0.5, 1.2, 'F');
+        pdf.setTextColor.apply(pdf, PDF_COLORS.textSecondary);
+        pdf.text(li.label, lx + 4, cursorY);
+        lx += 28;
+      });
+      cursorY += 4;
+      addChartImage(chartImgs.timeSeries, 65);
+
+      // ── SECTION: Audience ──
+      sectionHead('Audience');
+      var leftW = cw * 0.55;
+      var rightW = cw * 0.4;
+      var audienceStartY = cursorY;
+
+      // Left: Activity chart + bounce sparkline
+      if (chartImgs.activity) {
+        ensureSpace(50);
+        try {
+          pdf.addImage(chartImgs.activity, 'PNG', side, cursorY, leftW, 28);
+        } catch(e) {}
+        cursorY += 30;
+      }
+      if (chartImgs.bounce) {
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(5.5);
+        pdf.setTextColor.apply(pdf, PDF_COLORS.textMuted);
+        pdf.text('Bounce Rate Trend', side, cursorY + 2);
+        cursorY += 3;
+        try {
+          pdf.addImage(chartImgs.bounce, 'PNG', side, cursorY, leftW * 0.6, 10);
+        } catch(e) {}
+        cursorY += 12;
+      }
+
+      // Right: Devices chart
+      if (chartImgs.devices) {
+        var devY = audienceStartY;
+        try {
+          pdf.addImage(chartImgs.devices, 'PNG', side + leftW + 4, devY, rightW, 40);
+        } catch(e) {}
+        if (audienceStartY + 42 > cursorY) cursorY = audienceStartY + 42;
+      }
+      cursorY += 3;
+
+      // ── SECTION: Detailed Data ──
+      sectionHead('Detailed Data');
+
+      // Top Pages table
+      if (data.topPages && data.topPages.success && data.topPages.data.length > 0) {
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7.5);
+        pdf.setTextColor.apply(pdf, PDF_COLORS.textPrimary);
+        pdf.text('Top Pages', side, cursorY + 3); cursorY += 5;
+        var pgRows = data.topPages.data.slice(0, 8).map(function(p) {
+          return [p.title || '', formatNumber(p.views), formatDuration(p.avgDuration)];
+        });
+        drawTable(['Page Title', 'Views', 'Avg. Time'], pgRows, [120, 30, 30]);
+      }
+
+      // Countries table
+      if (data.countries && data.countries.success && data.countries.data.length > 0) {
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7.5);
+        pdf.setTextColor.apply(pdf, PDF_COLORS.textPrimary);
+        pdf.text('Countries', side, cursorY + 3); cursorY += 5;
+        var cTotal = data.countries.data.reduce(function(s, c) { return s + c.users; }, 0);
+        var cRows = data.countries.data.slice(0, 8).map(function(c) {
+          return [c.country, formatNumber(c.users), (cTotal > 0 ? ((c.users / cTotal) * 100).toFixed(1) : '0') + '%'];
+        });
+        drawTable(['Country', 'Users', 'Share'], cRows, [80, 40, 40]);
+      }
+
+      // Events table
+      if (data.events && data.events.success && data.events.data.length > 0) {
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7.5);
+        pdf.setTextColor.apply(pdf, PDF_COLORS.textPrimary);
+        pdf.text('GA4 Events', side, cursorY + 3); cursorY += 5;
+        var eRows = data.events.data.slice(0, 15).map(function(ev) {
+          var name = ev.name + (customEvents.indexOf(ev.name) !== -1 ? ' [TRACKED]' : '');
+          return [name, formatNumber(ev.count), formatNumber(ev.users)];
+        });
+        drawTable(['Event Name', 'Count', 'Users'], eRows, [100, 40, 40]);
+      }
+
+      // Traffic Sources table
+      if (data.trafficSources && data.trafficSources.success) {
+        var ts = data.trafficSources.data;
+        if (ts && ts.labels && ts.labels.length > 0) {
+          pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7.5);
+          pdf.setTextColor.apply(pdf, PDF_COLORS.textPrimary);
+          pdf.text('Traffic Sources', side, cursorY + 3); cursorY += 5;
+          var tsTotal = ts.values.reduce(function(s, v) { return s + v; }, 0);
+          var tsRows = ts.labels.map(function(label, i) {
+            var val = ts.values[i];
+            return [label, formatNumber(val), (tsTotal > 0 ? ((val / tsTotal) * 100).toFixed(1) : '0') + '%'];
+          });
+          drawTable(['Channel', 'Sessions', 'Share'], tsRows, [80, 40, 40]);
         }
       }
 
-      // Save PDF
-      const today = new Date().toISOString().split('T')[0];
+      // ── SECTION: Visitor Geography ──
+      if (chartImgs.geoMap) {
+        sectionHead('Visitor Geography');
+        var mapH = Math.min(55, cw / 2.2);
+        ensureSpace(mapH + 15);
+        try {
+          pdf.addImage(chartImgs.geoMap, 'PNG', side, cursorY, cw, mapH);
+          cursorY += mapH + 3;
+        } catch(e) { cursorY += 5; }
+
+        // Top-5 country legend
+        if (data.countries && data.countries.success && data.countries.data.length > 0) {
+          var cTotal2 = data.countries.data.reduce(function(s, c) { return s + c.users; }, 0);
+          var legendX = side;
+          pdf.setFont('helvetica', 'normal'); pdf.setFontSize(6);
+          data.countries.data.slice(0, 5).forEach(function(c) {
+            var pct = cTotal2 > 0 ? ((c.users / cTotal2) * 100).toFixed(0) : '0';
+            pdf.setFillColor.apply(pdf, PDF_COLORS.uwcBlue);
+            pdf.circle(legendX + 1, cursorY, 1, 'F');
+            pdf.setTextColor.apply(pdf, PDF_COLORS.textPrimary);
+            pdf.text(c.country + ' ' + pct + '%', legendX + 3, cursorY + 0.8);
+            legendX += 35;
+          });
+          cursorY += 5;
+        }
+      }
+
+      // ══════════════════════════════════════
+      // SECOND PASS: stamp correct page numbers
+      // ══════════════════════════════════════
+      var totalPages = pageNum;
+      for (var p = 1; p <= totalPages; p++) {
+        pdf.setPage(p);
+        drawPageChrome(p, totalPages);
+      }
+
+      // Save
+      var today = new Date().toISOString().split('T')[0];
       pdf.save('UWC_Analytics_' + currentPeriod + '_' + today + '.pdf');
 
     } catch (error) {
       console.error('PDF export error:', error);
-      alert('Error generating PDF. Please try again.');
+      alert('Error generating PDF: ' + error.message);
     } finally {
       btn.innerHTML = originalHTML;
       btn.disabled = false;
@@ -1636,104 +1938,90 @@
   // ========================================
   // User Journey Flow Visualization
   // ========================================
-  function updateJourneyFlow(pages, events) {
-    // Classify pages into 3 site buckets
+  // Pure data function — computes journey metrics from page/event arrays.
+  // Used by both the DOM updater (updateJourneyFlow) and the PDF renderer.
+  function computeJourneyData(pages, events) {
     var gsViews = 0, gsUsers = 0, gsDuration = 0, gsCount = 0;
     var ihViews = 0, ihUsers = 0, ihDuration = 0, ihCount = 0;
-    var ttoViews = 0; // track TTO separately so we can exclude it
 
     if (pages && pages.length > 0) {
       pages.forEach(function(p) {
         var path = (p.path || '').toLowerCase();
-
-        // Google Sites pages — root "/" plus any idealoceanhome or uwc.ac.za path
-        // BUT exclude dashboard self-tracking (just "/" alone on Cloudflare domain)
         if (path.indexOf('/uwc.ac.za/idealoceanhome') !== -1 ||
             path.indexOf('/interactive-loggerhead') !== -1) {
-          gsViews += p.views;
-          gsUsers += p.users;
-          gsDuration += p.avgDuration * p.views;
-          gsCount += p.views;
-        }
-        // InnovationHub project page
-        else if (path.indexOf('/jigspace/loggerheadturtle') !== -1 ||
-                 path.indexOf('/jigspace/loggerhead') !== -1) {
-          ihViews += p.views;
-          ihUsers += p.users;
-          ihDuration += p.avgDuration * p.views;
-          ihCount += p.views;
-        }
-        // TTO pages (excluded from journey but tracked for info)
-        else if (path.indexOf('/uwc-tto') !== -1 || path.indexOf('/tto') !== -1) {
-          ttoViews += p.views;
-        }
-        // Root "/" that is the Google Sites homepage
-        else if (path === '/') {
-          gsViews += p.views;
-          gsUsers += p.users;
-          gsDuration += p.avgDuration * p.views;
-          gsCount += p.views;
+          gsViews += p.views; gsUsers += p.users;
+          gsDuration += p.avgDuration * p.views; gsCount += p.views;
+        } else if (path.indexOf('/jigspace/loggerheadturtle') !== -1 ||
+                   path.indexOf('/jigspace/loggerhead') !== -1) {
+          ihViews += p.views; ihUsers += p.users;
+          ihDuration += p.avgDuration * p.views; ihCount += p.views;
+        } else if (path === '/') {
+          gsViews += p.views; gsUsers += p.users;
+          gsDuration += p.avgDuration * p.views; gsCount += p.views;
         }
       });
     }
 
-    // JigSpace clicks — from the open_interactive_model custom event
     var jigClicks = 0, jigUsers = 0;
     if (events && events.length > 0) {
       events.forEach(function(ev) {
         if (ev.name === 'open_interactive_model') {
-          jigClicks = ev.count;
-          jigUsers = ev.users;
+          jigClicks = ev.count; jigUsers = ev.users;
         }
       });
     }
 
-    // Calculate average durations
     var gsAvgDuration = gsCount > 0 ? gsDuration / gsCount : 0;
     var ihAvgDuration = ihCount > 0 ? ihDuration / ihCount : 0;
 
-    // Update node stats
-    setText('jnGSViews', formatNumber(gsViews));
-    setText('jnGSUsers', formatNumber(gsUsers));
-    setText('jnGSTime', gsAvgDuration > 0 ? 'avg ' + formatDuration(gsAvgDuration) : '—');
-
-    setText('jnIHViews', formatNumber(ihViews));
-    setText('jnIHUsers', formatNumber(ihUsers));
-    setText('jnIHTime', ihAvgDuration > 0 ? 'avg ' + formatDuration(ihAvgDuration) : '—');
-
-    setText('jnJigViews', formatNumber(jigClicks));
-    setText('jnJigUsers', formatNumber(jigUsers));
-    setText('jnJigTime', jigClicks > 0 ? 'via button click' : '—');
-
-    // Calculate conversion arrows
-    var totalEntry = gsViews + ihViews; // total site entry
+    var gsToIhPct = 0;
+    var totalEntry = gsViews + ihViews;
     if (totalEntry > 0) {
-      var gsToIhPct = ihViews > 0 && gsViews > 0
-        ? Math.round((ihViews / (gsViews + ihViews)) * 100)
+      gsToIhPct = ihViews > 0 && gsViews > 0
+        ? Math.round((ihViews / totalEntry) * 100)
         : (ihViews > 0 ? 100 : 0);
-      setText('jaGStoIH', gsToIhPct + '%');
-    } else {
-      setText('jaGStoIH', '—');
     }
 
-    if (ihViews > 0) {
-      var ihToJigPct = jigClicks > 0
-        ? Math.min(Math.round((jigClicks / ihViews) * 100), 100)
-        : 0;
-      setText('jaIHtoJig', ihToJigPct + '%');
-    } else {
-      setText('jaIHtoJig', '—');
+    var ihToJigPct = 0;
+    if (ihViews > 0 && jigClicks > 0) {
+      ihToJigPct = Math.min(Math.round((jigClicks / ihViews) * 100), 100);
     }
 
-    // Update funnel bars
-    var maxFunnel = Math.max(gsViews, ihViews, jigClicks, 1);
-    setStyle('funnelBar1', 'width', Math.max((gsViews / maxFunnel) * 100, 5) + '%');
-    setStyle('funnelBar2', 'width', Math.max((ihViews / maxFunnel) * 100, 5) + '%');
-    setStyle('funnelBar3', 'width', Math.max((jigClicks / maxFunnel) * 100, 5) + '%');
+    return {
+      gsViews: gsViews, gsUsers: gsUsers, gsAvgDuration: gsAvgDuration,
+      ihViews: ihViews, ihUsers: ihUsers, ihAvgDuration: ihAvgDuration,
+      jigClicks: jigClicks, jigUsers: jigUsers,
+      gsToIhPct: gsToIhPct, ihToJigPct: ihToJigPct
+    };
+  }
 
-    setText('funnelVal1', formatNumber(gsViews) + ' views');
-    setText('funnelVal2', formatNumber(ihViews) + ' views');
-    setText('funnelVal3', formatNumber(jigClicks) + ' clicks');
+  function updateJourneyFlow(pages, events) {
+    var j = computeJourneyData(pages, events);
+
+    setText('jnGSViews', formatNumber(j.gsViews));
+    setText('jnGSUsers', formatNumber(j.gsUsers));
+    setText('jnGSTime', j.gsAvgDuration > 0 ? 'avg ' + formatDuration(j.gsAvgDuration) : '—');
+
+    setText('jnIHViews', formatNumber(j.ihViews));
+    setText('jnIHUsers', formatNumber(j.ihUsers));
+    setText('jnIHTime', j.ihAvgDuration > 0 ? 'avg ' + formatDuration(j.ihAvgDuration) : '—');
+
+    setText('jnJigViews', formatNumber(j.jigClicks));
+    setText('jnJigUsers', formatNumber(j.jigUsers));
+    setText('jnJigTime', j.jigClicks > 0 ? 'via button click' : '—');
+
+    var totalEntry = j.gsViews + j.ihViews;
+    setText('jaGStoIH', totalEntry > 0 ? j.gsToIhPct + '%' : '—');
+    setText('jaIHtoJig', j.ihViews > 0 ? j.ihToJigPct + '%' : '—');
+
+    var maxFunnel = Math.max(j.gsViews, j.ihViews, j.jigClicks, 1);
+    setStyle('funnelBar1', 'width', Math.max((j.gsViews / maxFunnel) * 100, 5) + '%');
+    setStyle('funnelBar2', 'width', Math.max((j.ihViews / maxFunnel) * 100, 5) + '%');
+    setStyle('funnelBar3', 'width', Math.max((j.jigClicks / maxFunnel) * 100, 5) + '%');
+
+    setText('funnelVal1', formatNumber(j.gsViews) + ' views');
+    setText('funnelVal2', formatNumber(j.ihViews) + ' views');
+    setText('funnelVal3', formatNumber(j.jigClicks) + ' clicks');
   }
 
   function setText(id, text) {
