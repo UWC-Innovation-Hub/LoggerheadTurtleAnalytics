@@ -6,6 +6,9 @@
   // API helper — replaces google.script.run
   const API_BASE = '/api';
 
+  // Tracks last X-Cache header from Worker (HIT / MISS / BYPASS)
+  var lastCacheStatus = '';
+
   async function callAPI(action, params) {
     var token = window.SESSION_TOKEN || '';
     var response = await fetch(API_BASE + '/' + action, {
@@ -16,6 +19,9 @@
     if (!response.ok) {
       throw new Error('API error: ' + response.status);
     }
+    // Capture cache status from Worker for the data source badge
+    var xCache = response.headers.get('X-Cache');
+    if (xCache) lastCacheStatus = xCache;
     return response.json();
   }
 
@@ -552,8 +558,9 @@
         console.warn('[Dashboard] PageFlow failed:', data.pageFlow);
       }
 
-      // Always update — timestamp should reflect when data was last checked
+      // Always update — timestamp and cache source should reflect latest fetch
       updateLastUpdated();
+      updateCacheSourceBadge();
     } catch(e) {
       console.error('[Dashboard] Update error:', e);
     }
@@ -699,6 +706,23 @@
     h = h % 12 || 12;
     var mStr = m < 10 ? '0' + m : m;
     el.textContent = 'Updated ' + h + ':' + mStr + ' ' + ampm;
+  }
+
+  // Show data source badge — "Cached" (KV HIT) or "Origin" (Apps Script)
+  function updateCacheSourceBadge() {
+    var badge = document.getElementById('cacheSourceBadge');
+    if (!badge) return;
+    var status = (lastCacheStatus || '').toUpperCase();
+    badge.className = 'cache-source-badge visible';
+    if (status === 'HIT') {
+      badge.textContent = 'Cached';
+      badge.classList.add('hit');
+      badge.title = 'Served from edge cache (KV)';
+    } else {
+      badge.textContent = 'Origin';
+      badge.classList.add(status === 'MISS' ? 'miss' : 'bypass');
+      badge.title = status === 'MISS' ? 'Fetched from Apps Script, now cached' : 'Direct from Apps Script';
+    }
   }
 
   function updateRealtimeBadge(realtimeData) {

@@ -588,6 +588,37 @@
     50% { opacity: 0.4; transform: scale(0.8); }
   }
 
+  /* Cache Source Badge — shows "Cached" or "Origin" next to live indicator */
+  .cache-source-badge {
+    display: none;
+    align-items: center;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+
+  .cache-source-badge.visible {
+    display: inline-flex;
+  }
+
+  .cache-source-badge.hit {
+    background: rgba(189, 154, 79, 0.12);
+    border: 1px solid rgba(189, 154, 79, 0.3);
+    color: var(--uwc-gold);
+  }
+
+  .cache-source-badge.miss,
+  .cache-source-badge.bypass {
+    background: rgba(0, 51, 102, 0.08);
+    border: 1px solid rgba(0, 51, 102, 0.2);
+    color: var(--uwc-blue);
+  }
+
   /* Empty State Text */
   .empty-state-text {
     font-size: 0.8rem;
