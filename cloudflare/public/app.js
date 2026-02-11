@@ -1402,10 +1402,16 @@
         var logoYEnd = 12;
         if (logoBase64) {
           try {
-            var lh = 10, ti = new Image(); ti.src = logoBase64;
-            var lw = (ti.naturalWidth / ti.naturalHeight) * lh || lh * 3;
-            pdf.addImage(logoBase64, 'PNG', (pageWidth - lw) / 2, 5, lw, lh);
-            logoYEnd = 16;
+            // Get actual image dimensions by decoding the base64 data
+            var imgProps = pdf.getImageProperties(logoBase64);
+            var lh = 10;
+            var lw = imgProps.width && imgProps.height
+              ? (imgProps.width / imgProps.height) * lh
+              : lh * 2.5; // sensible fallback
+            // Cap width so logo doesn't stretch across the page
+            if (lw > 50) { lw = 50; lh = lw / (imgProps.width / imgProps.height); }
+            pdf.addImage(logoBase64, 'PNG', (pageWidth - lw) / 2, 4, lw, lh);
+            logoYEnd = 4 + lh + 1;
           } catch(e) {}
         }
         pdf.setTextColor(0, 0, 0);
@@ -1441,15 +1447,16 @@
 
       // ── Helper: section header ──
       function sectionHead(title) {
-        ensureSpace(10);
-        // Gold accent line
+        ensureSpace(12);
+        cursorY += 3; // breathing room before section
+        // Gold accent line — sits above the title text
         pdf.setFillColor.apply(pdf, PDF_COLORS.uwcGold);
         pdf.rect(side, cursorY, 12, 0.8, 'F');
-        cursorY += 3;
+        cursorY += 5; // gap between line and text
         pdf.setFont('helvetica', 'bold'); pdf.setFontSize(11);
         pdf.setTextColor.apply(pdf, PDF_COLORS.uwcNavy);
         pdf.text(title, side, cursorY);
-        cursorY += 5;
+        cursorY += 6;
       }
 
       // ── Helper: draw a data table ──
