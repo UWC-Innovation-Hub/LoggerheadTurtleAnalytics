@@ -5,11 +5,20 @@
  * Apps Script web apps return 302 redirects without CORS headers,
  * so this Worker follows the redirect server-side and returns the
  * JSON response with proper CORS headers to the browser.
+ *
+ * Cacheable actions (like fetchAllDashboardData) are stored in KV with
+ * a 60-second TTL so that auto-refresh cycles across all clients hit
+ * the edge instead of Apps Script.
  */
 
 const ALLOWED_ORIGINS = [
   'http://localhost:8788',  // local dev
 ];
+
+// Actions whose responses are identical for all authenticated users
+// and safe to serve from cache without per-request auth.
+const CACHEABLE_ACTIONS = new Set(['fetchAllDashboardData']);
+const CACHE_TTL_SECONDS = 60;
 
 function getCorsOrigin(request, env) {
   var origin = request.headers.get('Origin') || '';
@@ -46,6 +55,7 @@ export async function onRequestOptions(context) {
 export async function onRequestPost(context) {
   var origin = getCorsOrigin(context.request, context.env);
   var appsScriptUrl = context.env.APPS_SCRIPT_URL;
+  var kv = context.env.DASHBOARD_CACHE; // KV namespace — may be undefined in dev
 
   if (!appsScriptUrl) {
     return new Response(
@@ -63,20 +73,67 @@ export async function onRequestPost(context) {
   try {
     var body = await context.request.text();
 
-    // Forward to Apps Script — follow the Google 302 redirect
+    // Parse request to determine action & params for cache keying
+    var parsed = {};
+    try { parsed = JSON.parse(body); } catch (e) { /* non-JSON body, pass through */ }
+
+    var action = parsed.action || '';
+    var period = (parsed.params && parsed.params.period) || '';
+
+    // ── KV Cache: check for cached response ──
+    var cacheKey = null;
+    if (kv && CACHEABLE_ACTIONS.has(action) && period) {
+      cacheKey = 'cache:v1:' + action + ':' + period;
+      try {
+        var cached = await kv.get(cacheKey);
+        if (cached !== null) {
+          return new Response(cached, {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Cache': 'HIT',
+              'Cache-Control': 'no-store',
+              ...corsHeaders(origin),
+            },
+          });
+        }
+      } catch (kvErr) {
+        // KV read failed — fall through to origin
+        console.error('[KV] Read error:', kvErr);
+      }
+    }
+
+    // ── Cache MISS or non-cacheable: forward to Apps Script ──
     var response = await fetch(appsScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: body,
+      body: body, // Forward original body (includes session token for auth)
       redirect: 'follow',
     });
 
     var data = await response.text();
 
+    // ── KV Cache: store successful response ──
+    if (cacheKey && kv && data) {
+      try {
+        var respObj = JSON.parse(data);
+        // Only cache responses that look like successful dashboard data
+        // (have an 'overview' key) — never cache auth errors.
+        if (respObj && respObj.overview) {
+          context.waitUntil(
+            kv.put(cacheKey, data, { expirationTtl: CACHE_TTL_SECONDS })
+          );
+        }
+      } catch (e) {
+        // Non-JSON response or parse error — don't cache
+      }
+    }
+
     return new Response(data, {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
+        'X-Cache': cacheKey ? 'MISS' : 'BYPASS',
         'Cache-Control': 'no-store',
         ...corsHeaders(origin),
       },

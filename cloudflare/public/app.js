@@ -38,6 +38,20 @@
   let isFirstLoad = true;
   let isFetching = false; // prevents overlapping API calls
 
+  // Data fingerprints — tracks JSON hash of each data section to skip re-renders
+  // when auto-refresh returns identical data (common for analytics).
+  var dataFingerprints = {};
+  function hasDataChanged(key, newData) {
+    var hash = JSON.stringify(newData);
+    if (dataFingerprints[key] === hash) return false;
+    dataFingerprints[key] = hash;
+    return true;
+  }
+
+  // Render delay — debounces rendering 4s after auto-refresh fetch
+  const RENDER_DELAY_MS = 4000;
+  var renderDelayTimer = null;
+
   // Auto-refresh config
   const SYNC_INTERVAL = 60; // seconds between data refreshes
   let syncCountdown = SYNC_INTERVAL;
@@ -240,7 +254,7 @@
         maintainAspectRatio: false,
         interaction: {
           mode: 'index',
-          intersect: false
+          intersect: true
         },
         plugins: {
           tooltip: {
@@ -409,12 +423,25 @@
     try {
       var data = await callAPI('fetchAllDashboardData', { period: period });
 
-      // Cache the successful response for this period
+      // Cache the successful response for this period (immediately available for PDF export)
       cachedData[period] = data;
 
-      // Apply data to UI with smooth transitions
-      handleDashboardData(data);
-      isFirstLoad = false;
+      if (isFirstLoad) {
+        // First load: render immediately — user is waiting on the preloader
+        handleDashboardData(data);
+        isFirstLoad = false;
+      } else {
+        // Auto-refresh: delay render by 4s (debounced).  If another fetch
+        // completes before the timer fires, the timer resets — only the
+        // last fetch triggers a re-render.  This avoids visual churn and
+        // lets the data settle before touching the DOM.
+        if (renderDelayTimer) clearTimeout(renderDelayTimer);
+        renderDelayTimer = setTimeout(function() {
+          renderDelayTimer = null;
+          var latest = cachedData[currentPeriod];
+          if (latest) handleDashboardData(latest);
+        }, RENDER_DELAY_MS);
+      }
     } catch (error) {
       // If we have cached data for this period, keep showing it
       if (cachedData[period] && !isFirstLoad) {
@@ -438,57 +465,79 @@
       // Log API response for debugging data issues
       console.log('[Dashboard] API response received:', Object.keys(data));
 
+      // Each section is guarded by hasDataChanged() — if the API returned
+      // identical data, the update function is skipped entirely.  This avoids
+      // unnecessary chart redraws, table rebuilds, and geo map repaints on the
+      // typical 60-second auto-refresh where nothing changed.
+
       if (data.overview && data.overview.success) {
-        updateMetrics(data.overview.data);
-        updateDateRange(data.overview.dateRange);
+        if (hasDataChanged('overview', data.overview)) {
+          updateMetrics(data.overview.data);
+          updateDateRange(data.overview.dateRange);
+        }
       } else {
         console.warn('[Dashboard] Overview failed:', data.overview);
       }
 
       if (data.timeSeries && data.timeSeries.success) {
-        updateTimeSeriesChart(data.timeSeries.data);
-        updateActivityChart(data.timeSeries.data);
+        if (hasDataChanged('timeSeries', data.timeSeries)) {
+          updateTimeSeriesChart(data.timeSeries.data);
+          updateActivityChart(data.timeSeries.data);
+        }
       } else {
         console.warn('[Dashboard] TimeSeries failed:', data.timeSeries);
       }
 
       if (data.devices && data.devices.success) {
-        updateDevicesChart(data.devices.data);
+        if (hasDataChanged('devices', data.devices)) {
+          updateDevicesChart(data.devices.data);
+        }
       } else {
         console.warn('[Dashboard] Devices failed:', data.devices);
       }
 
       if (data.topPages && data.topPages.success) {
-        updateTopPagesTable(data.topPages.data);
+        if (hasDataChanged('topPages', data.topPages)) {
+          updateTopPagesTable(data.topPages.data);
+        }
       } else {
         console.warn('[Dashboard] TopPages failed:', data.topPages);
       }
 
       if (data.countries && data.countries.success) {
-        updateCountriesTable(data.countries.data);
-        updateGeoMap(data.countries.data);
+        if (hasDataChanged('countries', data.countries)) {
+          updateCountriesTable(data.countries.data);
+          updateGeoMap(data.countries.data);
+        }
       } else {
         console.warn('[Dashboard] Countries failed:', data.countries);
       }
 
       if (data.events && data.events.success) {
-        updateEventsTable(data.events.data);
+        if (hasDataChanged('events', data.events)) {
+          updateEventsTable(data.events.data);
+        }
       } else {
         console.warn('[Dashboard] Events failed:', data.events);
       }
 
       if (data.trafficSources && data.trafficSources.success) {
-        updateTrafficSourcesTable(data.trafficSources.data);
+        if (hasDataChanged('trafficSources', data.trafficSources)) {
+          updateTrafficSourcesTable(data.trafficSources.data);
+        }
       } else {
         console.warn('[Dashboard] TrafficSources failed:', data.trafficSources);
       }
 
       if (data.bounceTimeSeries && data.bounceTimeSeries.success) {
-        updateBounceSparkline(data.bounceTimeSeries.data);
+        if (hasDataChanged('bounceTimeSeries', data.bounceTimeSeries)) {
+          updateBounceSparkline(data.bounceTimeSeries.data);
+        }
       } else {
         console.warn('[Dashboard] BounceTimeSeries failed:', data.bounceTimeSeries);
       }
 
+      // Realtime badge — always update (cheap single textContent write, live count)
       if (data.realtime) {
         updateRealtimeBadge(data.realtime);
       } else {
@@ -496,12 +545,14 @@
       }
 
       if (data.pageFlow && data.pageFlow.success) {
-        updateJourneyFlow(data.pageFlow.data, data.events ? data.events.data : []);
+        if (hasDataChanged('pageFlow', data.pageFlow)) {
+          updateJourneyFlow(data.pageFlow.data, data.events ? data.events.data : []);
+        }
       } else {
         console.warn('[Dashboard] PageFlow failed:', data.pageFlow);
       }
 
-      // Update "Last Updated" timestamp
+      // Always update — timestamp should reflect when data was last checked
       updateLastUpdated();
     } catch(e) {
       console.error('[Dashboard] Update error:', e);
