@@ -344,7 +344,8 @@
     position: sticky;
     top: 148px; /* matches fixed header height (.nav-strip margin-top) */
     z-index: 900;
-    transition: padding 0.25s ease, box-shadow 0.25s ease;
+    /* No transition — stuck/unstuck toggle must be instant.
+       Animating padding + box-shadow on scroll caused layout thrashing. */
   }
 
   /* Compact state when stuck — JS toggles this class */
@@ -404,7 +405,7 @@
     margin-bottom: 24px;
     position: relative;
     padding-top: 2px;
-    transition: font-size 0.25s ease, margin-bottom 0.25s ease;
+    /* No transition — instant stuck/unstuck to avoid scroll reflow */
   }
 
   .hero-text h1::before {
@@ -425,7 +426,7 @@
     font-size: 0.9rem;
     color: var(--uwc-blue);
     font-weight: 500;
-    transition: font-size 0.25s ease;
+    /* No transition — instant stuck/unstuck to avoid scroll reflow */
   }
 
   .btn-view-project {
@@ -486,7 +487,7 @@
     color: var(--text-muted);
     cursor: pointer;
     border-radius: var(--radius-md);
-    transition: all 0.2s ease;
+    transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   }
 
   .period-btn:hover {
