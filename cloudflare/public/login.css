@@ -60,7 +60,7 @@
   .login-card {
     position: relative;
     z-index: 1;
-    background: #ffffff;
+    background: #0a1a5c;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     width: 100%;
@@ -148,6 +148,7 @@
      ======================================== */
   .login-form-container {
     padding: 28px 32px 24px;
+    background: #ffffff;
   }
 
   /* Steps */

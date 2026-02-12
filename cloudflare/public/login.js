@@ -371,84 +371,93 @@
 
   // ========================================
   // PWA Install Prompt (login page)
+  // Capture beforeinstallprompt immediately at top level
+  // to avoid race condition — event may fire before IIFE runs.
+  // Uses separate dismiss key from dashboard so popup
+  // shows independently on each page.
   // ========================================
+  var _pwaDeferred = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    _pwaDeferred = e;
+    // If login page is already visible, trigger popup after short delay
+    if (window.loginReady && !sessionStorage.getItem('pwa-login-dismissed')) {
+      setTimeout(_pwaShowPopup, 1200);
+    }
+  });
+
+  function _pwaShowPopup() {
+    var popup = document.getElementById('pwaInstallPopup');
+    if (!popup) return;
+    if (sessionStorage.getItem('pwa-login-dismissed')) return;
+
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    var nativeBtn = document.getElementById('pwaInstallBtn');
+    var iosInstructions = document.getElementById('pwaIOSInstructions');
+
+    if (isIOS) {
+      if (nativeBtn) nativeBtn.style.display = 'none';
+      if (iosInstructions) iosInstructions.style.display = 'block';
+    } else {
+      if (nativeBtn) nativeBtn.style.display = '';
+      if (iosInstructions) iosInstructions.style.display = 'none';
+    }
+
+    popup.classList.add('visible');
+  }
+
+  // When login page becomes ready, check if we already have a deferred prompt
+  // or if iOS should show instructions
   (function() {
-    var deferredPrompt = null;
-    var installDismissed = false;
+    function onLoginReady() {
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                         window.navigator.standalone === true;
 
-    // Wait for login page to be visible before showing install popup
-    function showAfterReady(delay) {
-      function check() {
-        if (window.loginReady) {
-          setTimeout(showInstallPopup, delay);
-        } else {
-          setTimeout(check, 300);
-        }
+      if (sessionStorage.getItem('pwa-login-dismissed')) return;
+
+      // On iOS (not installed), show after delay
+      if (isIOS && !isStandalone) {
+        setTimeout(_pwaShowPopup, 2000);
+        return;
       }
-      check();
-    }
 
-    // Capture beforeinstallprompt (Android / Desktop Chrome)
-    window.addEventListener('beforeinstallprompt', function(e) {
-      e.preventDefault();
-      deferredPrompt = e;
-      if (!installDismissed && !sessionStorage.getItem('pwa-install-dismissed')) {
-        showAfterReady(1500);
+      // On Android/Desktop, show if beforeinstallprompt already fired
+      if (_pwaDeferred) {
+        setTimeout(_pwaShowPopup, 1200);
       }
-    });
-
-    // iOS detection
-    function isIOS() {
-      return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    }
-    function isInStandaloneMode() {
-      return window.matchMedia('(display-mode: standalone)').matches ||
-             window.navigator.standalone === true;
+      // If beforeinstallprompt hasn't fired yet, the event listener above
+      // will trigger the popup when it does (since loginReady is now true)
     }
 
-    // Show install popup on iOS
-    if (isIOS() && !isInStandaloneMode()) {
-      if (!sessionStorage.getItem('pwa-install-dismissed')) {
-        showAfterReady(2000);
-      }
-    }
-
-    function showInstallPopup() {
-      var popup = document.getElementById('pwaInstallPopup');
-      if (!popup) return;
-
-      var nativeBtn = document.getElementById('pwaInstallBtn');
-      var iosInstructions = document.getElementById('pwaIOSInstructions');
-      if (isIOS()) {
-        if (nativeBtn) nativeBtn.style.display = 'none';
-        if (iosInstructions) iosInstructions.style.display = 'block';
+    // Poll for loginReady (set by warm-up preloader when login form is visible)
+    function waitForLogin() {
+      if (window.loginReady) {
+        onLoginReady();
       } else {
-        if (nativeBtn) nativeBtn.style.display = '';
-        if (iosInstructions) iosInstructions.style.display = 'none';
+        setTimeout(waitForLogin, 300);
       }
-
-      popup.classList.add('visible');
     }
+    waitForLogin();
+  })();
 
-    // Install button click
-    window.pwaInstallApp = function() {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function() {
-        deferredPrompt = null;
-        dismissInstallPopup();
-      });
-    };
-
-    // Dismiss popup
-    window.dismissInstallPopup = function() {
-      installDismissed = true;
-      sessionStorage.setItem('pwa-install-dismissed', '1');
-      var popup = document.getElementById('pwaInstallPopup');
-      if (popup) popup.classList.remove('visible');
-    };
-
-    window.addEventListener('appinstalled', function() {
+  // Install button click
+  window.pwaInstallApp = function() {
+    if (!_pwaDeferred) return;
+    _pwaDeferred.prompt();
+    _pwaDeferred.userChoice.then(function() {
+      _pwaDeferred = null;
       window.dismissInstallPopup();
     });
-  })();
+  };
+
+  // Dismiss popup (login-specific key)
+  window.dismissInstallPopup = function() {
+    sessionStorage.setItem('pwa-login-dismissed', '1');
+    var popup = document.getElementById('pwaInstallPopup');
+    if (popup) popup.classList.remove('visible');
+  };
+
+  window.addEventListener('appinstalled', function() {
+    window.dismissInstallPopup();
+  });
