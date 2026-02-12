@@ -1,6 +1,6 @@
 {
-  "name": "UWC Immersive Zone - Analytics Dashboard",
-  "short_name": "UWC Analytics",
+  "name": "Loggerhead Analytics",
+  "short_name": "Loggerhead Analytics",
   "description": "Track engagement and performance metrics for UWC Immersive Zone educational experiences.",
   "start_url": "/",
   "display": "standalone",
