@@ -440,7 +440,7 @@
   .dashboard-hero {
     background: var(--gradient-card);
     border-bottom: 1px solid var(--border-light);
-    padding: var(--space-xl) clamp(var(--space-xl), 10vw, 200px);
+    padding: 20px clamp(var(--space-xl), 10vw, 200px);
     margin-top: 0; /* nav strip is no longer fixed, flows naturally */
     overflow: hidden;
     /* Sticky: sticks below the fixed header when scrolling */
