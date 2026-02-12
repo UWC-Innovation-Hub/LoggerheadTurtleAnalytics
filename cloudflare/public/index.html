@@ -6,9 +6,9 @@
   <title>UWC Immersive Zone - Analytics Dashboard</title>
 
   <!-- Favicon + PWA -->
-  <link rel="icon" type="image/png" sizes="32x32" href="https://innovationhub.uwc.ac.za/jigspace/favicon-32.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="https://innovationhub.uwc.ac.za/jigspace/favicon.png">
-  <link rel="apple-touch-icon" href="https://innovationhub.uwc.ac.za/jigspace/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0a1a5c">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -71,29 +71,11 @@
       </div>
     </div>
     <nav class="header-nav">
-      <a href="https://innovationhub.uwc.ac.za/about.html" target="_blank" class="nav-item">
-        About
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-chevron">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </a>
-      <a href="https://innovationhub.uwc.ac.za/immersive-zone.html" target="_blank" class="nav-item">
-        Immersive Zone
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-chevron">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </a>
       <a href="https://loggerhead-turtle.pages.dev/" target="_blank" class="nav-item" onclick="trackOutboundClick('visit_project_site', 'Dashboard Nav', 'LoggerHeadTurtle')">
         Visit Project Site
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-chevron">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
       </a>
       <a href="https://innovationhub.uwc.ac.za/contact-us.html" target="_blank" class="nav-item">
         Contact
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-chevron">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
       </a>
       <span class="header-logged-in">Logged in as | <strong id="loggedInName">—</strong></span>
       <button class="sign-out-btn" onclick="handleSignOut()" title="Sign out">
@@ -591,8 +573,6 @@
   <footer class="footer">
     <div class="footer-content">
       <div class="footer-links">
-        <a href="https://innovationhub.uwc.ac.za/about.html" target="_blank">About</a>
-        <a href="https://innovationhub.uwc.ac.za/immersive-zone.html" target="_blank">Immersive Zone</a>
         <a href="https://loggerhead-turtle.pages.dev/" target="_blank" onclick="trackOutboundClick('visit_project_site', 'Dashboard Footer', 'LoggerHeadTurtle')">Visit Project Site</a>
         <a href="https://innovationhub.uwc.ac.za/contact-us.html" target="_blank">Contact</a>
       </div>

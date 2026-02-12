@@ -45,25 +45,60 @@
   }
 
   // ========================================
-  // Auto-restore: check for existing valid session
+  // Warm-up Preloader + Auto-restore session
+  // Fires a lightweight API call to wake Apps Script while showing the
+  // preloader, so the backend is hot when the user submits their email.
+  // If there's a saved session token, validates it in parallel.
   // ========================================
-  (async function checkExistingSession() {
+  (async function warmUpAndCheckSession() {
+    var preloader = document.getElementById('loginPreloader');
+    var loginPage = document.getElementById('loginPage');
+    var fillBar = document.getElementById('loginPreloaderFill');
+
+    function revealLogin() {
+      // Complete the progress bar, then fade out preloader
+      if (fillBar) fillBar.classList.add('complete');
+      setTimeout(function() {
+        if (loginPage) loginPage.style.display = '';
+        if (preloader) preloader.classList.add('hidden');
+        // Remove preloader from DOM after transition
+        setTimeout(function() {
+          if (preloader && preloader.parentNode) preloader.parentNode.removeChild(preloader);
+        }, 600);
+      }, 400);
+    }
+
+    // Maximum wait — always reveal login after 8s even if API is unresponsive
+    var maxWaitTimer = setTimeout(revealLogin, 8000);
+
+    // Check for existing session
     var savedToken = safeStorageGet('uwc_session_token');
-    if (!savedToken) return;
 
     try {
-      var result = await callAPI('validateSession', { token: savedToken });
-      if (result && result.valid) {
-        // Session still good — go straight to dashboard
-        window.location.href = '/?token=' + savedToken;
+      if (savedToken) {
+        // Validate existing session (also warms up Apps Script)
+        var result = await callAPI('validateSession', { token: savedToken });
+        if (result && result.valid) {
+          // Session still good — redirect to dashboard
+          clearTimeout(maxWaitTimer);
+          window.location.href = '/?token=' + savedToken;
+          return;
+        } else {
+          safeStorageRemove('uwc_session_token');
+          safeStorageRemove('uwc_session_name');
+        }
       } else {
-        safeStorageRemove('uwc_session_token');
-        safeStorageRemove('uwc_session_name');
+        // No saved session — warm up with lightweight call
+        await callAPI('getAppVersion');
       }
     } catch(e) {
       safeStorageRemove('uwc_session_token');
       safeStorageRemove('uwc_session_name');
     }
+
+    // Warm-up complete — reveal login
+    clearTimeout(maxWaitTimer);
+    revealLogin();
   })();
 
   // ========================================
