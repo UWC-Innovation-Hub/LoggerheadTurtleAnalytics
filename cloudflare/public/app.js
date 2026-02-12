@@ -2182,8 +2182,8 @@
     try { sessionStorage.removeItem('uwc_session_name'); } catch(e) {}
     try { localStorage.removeItem('uwc_session_token'); } catch(e) {}
     try { localStorage.removeItem('uwc_session_name'); } catch(e) {}
-    // Redirect to Cloudflare-hosted login page
-    window.location.href = '/login.html';
+    // Redirect to Cloudflare-hosted login page (pretty URL — no .html extension)
+    window.location.href = '/login';
   }
 
   // ========================================

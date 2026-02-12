@@ -3,15 +3,17 @@
 // Cache-first for static assets, network-first for API
 // ========================================
 
-var CACHE_NAME = 'uwc-analytics-v1';
+var CACHE_NAME = 'uwc-analytics-v2';
 
 // Static assets to pre-cache on install
+// NOTE: Cloudflare Pages uses "pretty URLs" — /index.html redirects to /
+// and /login.html redirects to /login via 308.  Pre-cache the final URLs
+// so the SW stores actual HTML, not redirect responses.
 var PRECACHE_URLS = [
   '/',
-  '/index.html',
+  '/login',
   '/style.css',
   '/app.js',
-  '/login.html',
   '/login.css',
   '/login.js',
   '/manifest.json'
