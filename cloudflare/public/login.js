@@ -366,3 +366,77 @@
       navigator.serviceWorker.register('/sw.js').catch(function() {});
     });
   }
+
+  // ========================================
+  // PWA Install Prompt (login page)
+  // ========================================
+  (function() {
+    var deferredPrompt = null;
+    var installDismissed = false;
+
+    // Capture beforeinstallprompt (Android / Desktop Chrome)
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (!installDismissed && !sessionStorage.getItem('pwa-install-dismissed')) {
+        setTimeout(showInstallPopup, 2000);
+      }
+    });
+
+    // iOS detection
+    function isIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    }
+    function isInStandaloneMode() {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true;
+    }
+
+    // Show install popup on iOS
+    if (isIOS() && !isInStandaloneMode()) {
+      if (!sessionStorage.getItem('pwa-install-dismissed')) {
+        window.addEventListener('load', function() {
+          setTimeout(showInstallPopup, 3000);
+        });
+      }
+    }
+
+    function showInstallPopup() {
+      var popup = document.getElementById('pwaInstallPopup');
+      if (!popup) return;
+
+      var nativeBtn = document.getElementById('pwaInstallBtn');
+      var iosInstructions = document.getElementById('pwaIOSInstructions');
+      if (isIOS()) {
+        if (nativeBtn) nativeBtn.style.display = 'none';
+        if (iosInstructions) iosInstructions.style.display = 'block';
+      } else {
+        if (nativeBtn) nativeBtn.style.display = '';
+        if (iosInstructions) iosInstructions.style.display = 'none';
+      }
+
+      popup.classList.add('visible');
+    }
+
+    // Install button click
+    window.pwaInstallApp = function() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function() {
+        deferredPrompt = null;
+        dismissInstallPopup();
+      });
+    };
+
+    // Dismiss popup
+    window.dismissInstallPopup = function() {
+      installDismissed = true;
+      sessionStorage.setItem('pwa-install-dismissed', '1');
+      var popup = document.getElementById('pwaInstallPopup');
+      if (popup) popup.classList.remove('visible');
+    };
+
+    window.addEventListener('appinstalled', function() {
+      window.dismissInstallPopup();
+    });
+  })();

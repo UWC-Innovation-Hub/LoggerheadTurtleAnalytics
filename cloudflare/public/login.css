@@ -532,3 +532,145 @@
     font-weight: 400;
     letter-spacing: 0.3px;
   }
+
+  /* ========================================
+     PWA Install Popup (login page)
+     ======================================== */
+  .pwa-install-popup {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 3px solid #bd9a4f;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 2rem;
+    transform: translateY(100%);
+    opacity: 0;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+  }
+
+  .pwa-install-popup.visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .pwa-install-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    color: #a0aec0;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .pwa-install-close:hover {
+    color: #1a202c;
+  }
+
+  .pwa-install-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #0a1a5c 0%, #102d8a 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+  }
+
+  .pwa-install-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .pwa-install-text strong {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0a1a5c;
+  }
+
+  .pwa-install-text span {
+    font-size: 0.8rem;
+    color: #718096;
+    line-height: 1.4;
+  }
+
+  .pwa-install-btn {
+    flex-shrink: 0;
+    padding: 10px 24px;
+    background: #bd9a4f;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 8px rgba(189,154,79,0.3);
+  }
+
+  .pwa-install-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(189,154,79,0.4);
+  }
+
+  .pwa-ios-instructions {
+    flex-shrink: 0;
+  }
+
+  .pwa-ios-instructions span {
+    font-size: 0.82rem;
+    color: #718096;
+    line-height: 1.5;
+  }
+
+  .pwa-ios-instructions strong {
+    color: #0a1a5c;
+  }
+
+  @media (max-width: 600px) {
+    .pwa-install-popup {
+      flex-wrap: wrap;
+      padding: 14px 18px;
+      padding-right: 36px;
+      gap: 10px;
+    }
+
+    .pwa-install-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+
+    .pwa-install-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .pwa-install-btn {
+      width: 100%;
+      text-align: center;
+    }
+
+    .pwa-ios-instructions {
+      width: 100%;
+    }
+  }
